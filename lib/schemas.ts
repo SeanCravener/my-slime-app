@@ -1,23 +1,68 @@
 import { z } from "zod";
 
+// Password validation
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128, "Password must be less than 128 characters")
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+    "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+  );
+
+// Email validation
+const emailSchema = z
+  .string()
+  .min(1, "Email is required")
+  .max(254, "Email is too long")
+  .email("Please enter a valid email address")
+  .transform((email) => email.toLowerCase().trim());
+
 export const signInSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: emailSchema,
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .max(128, "Password is too long"),
 });
 
-export const signUpSchema = signInSchema
-  .extend({
-    confirmPassword: z
-      .string()
-      .min(6, "Password must be at least 6 characters"),
+export const signUpSchema = z
+  .object({
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
 
+export const resetPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const newPasswordSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+// Rate limiting schema for client-side
+export const rateLimitSchema = z.object({
+  attempts: z
+    .number()
+    .max(5, "Too many attempts. Please wait before trying again."),
+  lastAttempt: z.date(),
+});
+
 export type SignInSchema = z.infer<typeof signInSchema>;
 export type SignUpSchema = z.infer<typeof signUpSchema>;
+export type ResetPasswordSchema = z.infer<typeof resetPasswordSchema>;
+export type NewPasswordSchema = z.infer<typeof newPasswordSchema>;
 
 export const ingredientSchema = z.object({
   value: z.string().min(1, "Ingredient cannot be empty"),
