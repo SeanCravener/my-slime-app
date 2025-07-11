@@ -13,6 +13,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@expo/html-elements": "^0.4.2",
     "@expo/vector-icons": "^14.1.0",
     "@gluestack-ui/alert-dialog": "^0.1.38",
     "@gluestack-ui/avatar": "^0.1.18",
@@ -23,9 +24,11 @@
     "@gluestack-ui/icon": "^0.1.27",
     "@gluestack-ui/image": "^0.1.17",
     "@gluestack-ui/input": "^0.1.38",
+    "@gluestack-ui/modal": "^0.1.41",
     "@gluestack-ui/nativewind-utils": "^1.0.26",
     "@gluestack-ui/overlay": "^0.1.22",
     "@gluestack-ui/pressable": "^0.1.23",
+    "@gluestack-ui/progress": "^0.1.18",
     "@gluestack-ui/spinner": "^0.1.15",
     "@gluestack-ui/toast": "^1.0.9",
     "@hookform/resolvers": "^5.1.1",
