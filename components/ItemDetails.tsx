@@ -52,19 +52,19 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({
         <FavoriteButton itemId={id} variant="outline" size="md" />
       </HStack>
 
-      <Divider className="my-2" />
+      <Divider />
 
       {/* Description Section */}
       <VStack space="sm">
         <Text size="lg" className="font-semibold text-foreground">
           Description
         </Text>
-        <Text size="md" className="text-foreground leading-relaxed">
+        <Text size="md" className="ml-4 text-foreground leading-relaxed">
           {description}
         </Text>
       </VStack>
 
-      <Divider className="my-2" />
+      <Divider />
 
       {/* Ingredients Section */}
       <VStack space="md">
@@ -79,24 +79,23 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({
 
         <VStack space="xs">
           {ingredients.map((ingredient, index) => (
-            <HStack key={index} space="sm" className="items-center">
-              <Box className="w-1.5 h-1.5 bg-primary rounded-full" />
-              <Text size="md" className="text-foreground flex-1">
-                {ingredient.value}
-              </Text>
-            </HStack>
+            <Text key={index} size="md" className="ml-4 text-foreground flex-1">
+              {ingredient.value}
+            </Text>
           ))}
         </VStack>
       </VStack>
 
-      <Divider className="my-2" />
+      <Divider />
 
       {/* Author Section */}
       <VStack space="sm">
         <Text size="lg" className="font-semibold text-foreground">
           Recipe by
         </Text>
-        <AuthorInfo userId={authorId} size="md" orientation="horizontal" />
+        <Box className="ml-4">
+          <AuthorInfo userId={authorId} size="md" orientation="horizontal" />
+        </Box>
       </VStack>
     </VStack>
   );

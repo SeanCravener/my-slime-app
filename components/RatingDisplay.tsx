@@ -22,36 +22,6 @@ export const RatingDisplay: React.FC<RatingDisplayProps> = ({
   showCount = false,
   reviewCount,
 }) => {
-  const getIconSize = () => {
-    switch (size) {
-      case "xs":
-        return 12;
-      case "sm":
-        return 14;
-      case "md":
-        return 16;
-      case "lg":
-        return 20;
-      default:
-        return 16;
-    }
-  };
-
-  const getTextSize = () => {
-    switch (size) {
-      case "xs":
-        return "text-xs";
-      case "sm":
-        return "text-sm";
-      case "md":
-        return "text-base";
-      case "lg":
-        return "text-lg";
-      default:
-        return "text-base";
-    }
-  };
-
   const displayRating = Math.max(0, Math.min(rating, maxRating));
 
   if (type === "compact") {
