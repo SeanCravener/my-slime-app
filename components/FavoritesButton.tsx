@@ -7,7 +7,7 @@ interface FavoriteButtonProps {
   itemId: string;
   variant?: "solid" | "outline" | "link" | undefined;
   disabled?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xs" | "xl";
 }
 
 export const FavoriteButton: React.FC<FavoriteButtonProps> = ({

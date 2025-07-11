@@ -1,4 +1,4 @@
-import { Item as DbItem } from "./database";
+import { Item as DbItem, Profile } from "./database";
 
 export interface Ingredient {
   value: string;
@@ -24,11 +24,11 @@ export interface ItemSummary {
   category: string;
 }
 
-export type Author = {
+export interface Author {
   id: string;
   username: string;
   avatar_url: string | null;
-};
+}
 
 // NEW: Enhanced type with author info
 export interface ItemSummaryWithAuthor extends ItemSummary {

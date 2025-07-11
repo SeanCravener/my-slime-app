@@ -28,6 +28,7 @@ export const ItemList = ({
 }: ItemListProps) => {
   const handleItemPress = useCallback((itemId: string) => {
     console.log(`Item pressed: ${itemId}`); // TEMPORARY
+    router.push(`/item/${itemId}`);
   }, []);
 
   const renderItem = useCallback(

@@ -10,6 +10,8 @@ interface RatingDisplayProps {
   type?: RatingDisplayType;
   size?: "xs" | "sm" | "md" | "lg";
   maxRating?: number;
+  showCount?: boolean;
+  reviewCount?: number;
 }
 
 export const RatingDisplay: React.FC<RatingDisplayProps> = ({
@@ -17,21 +19,97 @@ export const RatingDisplay: React.FC<RatingDisplayProps> = ({
   type = "full",
   size = "md",
   maxRating = 5,
+  showCount = false,
+  reviewCount,
 }) => {
-  const iconSize = size === "sm" ? "sm" : size === "lg" ? "lg" : "md";
-  const textSize =
-    size === "sm" ? "text-sm" : size === "lg" ? "text-lg" : "text-base";
+  const getIconSize = () => {
+    switch (size) {
+      case "xs":
+        return 12;
+      case "sm":
+        return 14;
+      case "md":
+        return 16;
+      case "lg":
+        return 20;
+      default:
+        return 16;
+    }
+  };
+
+  const getTextSize = () => {
+    switch (size) {
+      case "xs":
+        return "text-xs";
+      case "sm":
+        return "text-sm";
+      case "md":
+        return "text-base";
+      case "lg":
+        return "text-lg";
+      default:
+        return "text-base";
+    }
+  };
+
+  const displayRating = Math.max(0, Math.min(rating, maxRating));
+
+  if (type === "compact") {
+    return (
+      <HStack space="xs" className="items-center">
+        <Icon
+          as={StarIcon}
+          size={size}
+          className="text-yellow-500 fill-yellow-500"
+        />
+        <Text size={size} className={`font-medium text-foreground`}>
+          {displayRating.toFixed(1)}
+        </Text>
+        {showCount && reviewCount !== undefined && (
+          <Text size={size} className={`text-muted-foreground`}>
+            ({reviewCount})
+          </Text>
+        )}
+      </HStack>
+    );
+  }
 
   return (
     <HStack space="xs" className="items-center">
-      <Icon
-        as={StarIcon}
-        size={size}
-        className="text-yellow-500 fill-yellow-500"
-      />
+      {/* Star Icons */}
+      <HStack space="xs" className="items-center">
+        {Array.from({ length: maxRating }, (_, index) => {
+          const starValue = index + 1;
+          const isFullStar = displayRating >= starValue;
+          const isHalfStar =
+            displayRating >= starValue - 0.5 && displayRating < starValue;
+
+          return (
+            <Icon
+              key={index}
+              as={StarIcon}
+              size={size}
+              className={
+                isFullStar || isHalfStar
+                  ? "text-yellow-500 fill-yellow-500"
+                  : "text-gray-300 fill-gray-300"
+              }
+            />
+          );
+        })}
+      </HStack>
+
+      {/* Rating Text */}
       <Text size={size} className={`font-medium text-foreground`}>
-        ({rating.toFixed(1)})
+        {displayRating.toFixed(1)}
       </Text>
+
+      {/* Review Count */}
+      {showCount && reviewCount !== undefined && (
+        <Text size={size} className={`text-muted-foreground`}>
+          ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
+        </Text>
+      )}
     </HStack>
   );
 };

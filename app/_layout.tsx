@@ -1,4 +1,5 @@
 import "@/global.css";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { Stack } from "expo-router";
 import { AuthProvider } from "@/context/AuthContext";
@@ -11,20 +12,30 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   return (
-    <GluestackUIProvider mode="light">
-      <QueryProvider>
-        <AuthProvider>
-          <FavoritesProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="auth"
-                options={{ headerShown: false, presentation: "modal" }}
-              />
-            </Stack>
-          </FavoritesProvider>
-        </AuthProvider>
-      </QueryProvider>
-    </GluestackUIProvider>
+    <SafeAreaProvider>
+      <SafeAreaView
+        style={{ flex: 1 }}
+        edges={["top", "left", "right", "bottom"]}
+      >
+        <GluestackUIProvider mode="light">
+          <QueryProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                <Stack>
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="auth"
+                    options={{ headerShown: true, presentation: "modal" }}
+                  />
+                </Stack>
+              </FavoritesProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </GluestackUIProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
