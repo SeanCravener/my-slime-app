@@ -1,5 +1,5 @@
 import React from "react";
-import { SafeAreaView, ScrollView, Image } from "react-native";
+import { ScrollView, Image } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useItem } from "@/hooks/useItem";
 import { useAuth } from "@/context/AuthContext";
@@ -34,11 +34,9 @@ export default function ItemDetailScreen() {
 
   if (isLoading || !item) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
-        <Box className="flex-1 justify-center items-center">
-          <Spinner size="large" />
-        </Box>
-      </SafeAreaView>
+      <Box className="flex-1 justify-center items-center">
+        <Spinner size="large" />
+      </Box>
     );
   }
 
