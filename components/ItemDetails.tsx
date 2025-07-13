@@ -13,7 +13,7 @@ export interface ItemDetailsProps {
   id: string;
   title: string;
   category: string;
-  rating: number;
+  rating: number | null; // Rating can be null
   description: string;
   ingredients: Ingredient[];
   authorId: string;
@@ -42,7 +42,7 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({
           </Text>
 
           <VStack space="xs">
-            <RatingDisplay rating={rating} type="full" size="sm" />
+            <RatingDisplay rating={rating || 0} type="full" size="sm" />
             <Text size="sm" className="text-muted-foreground font-medium">
               {category}
             </Text>
@@ -59,7 +59,7 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({
         <Text size="lg" className="font-semibold text-foreground">
           Description
         </Text>
-        <Text size="md" className="ml-4 text-foreground leading-relaxed">
+        <Text size="md" className="text-foreground leading-relaxed">
           {description}
         </Text>
       </VStack>
@@ -77,12 +77,26 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({
           </Text>
         </HStack>
 
-        <VStack space="xs">
-          {ingredients.map((ingredient, index) => (
-            <Text key={index} size="md" className="ml-4 text-foreground flex-1">
-              {ingredient.value}
+        <VStack space="sm">
+          {ingredients.length > 0 ? (
+            ingredients.map((ingredient, index) => (
+              <HStack key={index} space="sm" className="items-start">
+                <Text size="md" className="text-muted-foreground min-w-[20px]">
+                  •
+                </Text>
+                <Text
+                  size="md"
+                  className="text-foreground flex-1 leading-relaxed"
+                >
+                  {ingredient.value}
+                </Text>
+              </HStack>
+            ))
+          ) : (
+            <Text size="md" className="text-muted-foreground italic">
+              No ingredients listed
             </Text>
-          ))}
+          )}
         </VStack>
       </VStack>
 
@@ -93,7 +107,7 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({
         <Text size="lg" className="font-semibold text-foreground">
           Recipe by
         </Text>
-        <Box className="ml-4">
+        <Box className="ml-2">
           <AuthorInfo userId={authorId} size="md" orientation="horizontal" />
         </Box>
       </VStack>
