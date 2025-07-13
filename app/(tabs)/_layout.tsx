@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { Home, User } from "lucide-react-native";
+import { Home, User, Search, PlusCircle } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -32,6 +32,22 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Search",
+          tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="add"
+        options={{
+          title: "Add Recipe",
+          tabBarIcon: ({ color, size }) => (
+            <PlusCircle color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen

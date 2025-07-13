@@ -54,19 +54,10 @@ export default function SearchScreen() {
             >
               <VStack space="sm" className="pt-12 pb-2">
                 {/* Title Row */}
-                <HStack className="justify-between items-center px-4 py-2">
-                  <Box className="w-10" />
+                <HStack className="justify-between w-full items-center px-4 py-2">
                   <Text size="xl" className="font-bold text-foreground">
                     Search
                   </Text>
-                  <Button
-                    variant="solid"
-                    size="sm"
-                    onPress={handleSettingsPress}
-                    className="w-10 h-10"
-                  >
-                    <ButtonIcon as={SettingsIcon} />
-                  </Button>
                 </HStack>
 
                 {/* Search Bar Row */}
