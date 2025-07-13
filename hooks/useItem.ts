@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Item, Instruction } from "@/types/item";
+import { Item, Instruction, Ingredient } from "@/types/item";
 
-interface ItemWithDetails extends Omit<Item, "instructions"> {
+interface ItemWithDetails extends Omit<Item, "instructions" | "ingredients"> {
   instructions: Instruction[];
+  ingredients: Ingredient[];
   category: string;
 }
 
@@ -15,6 +16,11 @@ function isValidInstruction(obj: any): obj is Instruction {
     typeof obj.content === "string" &&
     typeof obj["image-url"] === "string"
   );
+}
+
+// Type guard to validate ingredient format
+function isValidIngredient(obj: any): obj is Ingredient {
+  return obj && typeof obj === "object" && typeof obj.value === "string";
 }
 
 export function useItem(itemId: string | undefined) {
@@ -56,11 +62,24 @@ export function useItem(itemId: string | undefined) {
         }
       }
 
+      // Transform and validate ingredients
+      const transformedIngredients: Ingredient[] = [];
+      if (data.ingredients && Array.isArray(data.ingredients)) {
+        for (const ingredient of data.ingredients) {
+          if (isValidIngredient(ingredient)) {
+            transformedIngredients.push(ingredient);
+          } else {
+            console.warn("Invalid ingredient format:", ingredient);
+          }
+        }
+      }
+
       // Transform the data to match expected interface
       return {
         ...data,
         category: data.item_categories.category,
         instructions: transformedInstructions,
+        ingredients: transformedIngredients,
       };
     },
     enabled: !!itemId,

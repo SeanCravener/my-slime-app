@@ -9,8 +9,9 @@ export interface Instruction {
   "image-url": string;
 }
 
-export interface Item extends Omit<DbItem, "instructions"> {
+export interface Item extends Omit<DbItem, "instructions" | "ingredients"> {
   instructions: Instruction[];
+  ingredients: Ingredient[];
   category: string;
 }
 
