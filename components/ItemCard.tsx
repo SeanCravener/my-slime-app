@@ -36,7 +36,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
               {item.title}
             </Text>
 
-            <AuthorInfo author={item.author} size="xs" />
+            <AuthorInfo author={item.author} userId={item.user_id} size="xs" />
 
             <HStack space="md" className="items-center">
               <RatingDisplay

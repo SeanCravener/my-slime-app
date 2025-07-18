@@ -7,7 +7,8 @@ import {
   DrawerBody,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
+import { Divider } from "@/components/ui/divider";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Text } from "@/components/ui/text";
@@ -27,21 +28,28 @@ export const IngredientsDrawer: React.FC<IngredientsDrawerProps> = ({
   const heading: String = "Ingredients";
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} closeOnOverlayClick={true}>
+    <Drawer
+      size="lg"
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnOverlayClick={true}
+    >
       <DrawerBackdrop />
       <DrawerContent>
         <DrawerHeader>
           <Heading>{heading}</Heading>
         </DrawerHeader>
         <DrawerBody>
-          <HStack space="xs">
+          <VStack space="xs" className="overflow-auto">
+            <Divider orientation="horizontal" />
             {ingredients.map((ingredient, index) => (
-              <Text key={index}>• {ingredient.value}</Text>
+              <Text size="sm" key={index}>
+                • {ingredient.value}
+              </Text>
             ))}
-          </HStack>
+          </VStack>
         </DrawerBody>
         <DrawerFooter>
-          {" "}
           <Button action="primary" variant="solid" size="lg" onPress={onClose}>
             <ButtonText>Close</ButtonText>
           </Button>

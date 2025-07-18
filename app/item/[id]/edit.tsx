@@ -8,11 +8,20 @@ import { Spinner } from "@/components/ui/spinner";
 import { Center } from "@/components/ui/center";
 import { EditItemForm } from "@/components/EditItemForm";
 import { ItemFormData } from "@/types/item";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
-export default function EditItemScreen() {
+export default function EditItem() {
+  return (
+    <ProtectedRoute>
+      <EditItemScreen />
+    </ProtectedRoute>
+  );
+}
+
+function EditItemScreen() {
   const { id } = useLocalSearchParams();
   const { data: item, isLoading } = useItem(id as string);
-  const { editItem, deleteItem, isEditing, isDeleting } = useEditItem(
+  const { editItem, deleteItem, isEditing, isDeleting, error } = useEditItem(
     id as string
   );
 
@@ -39,21 +48,14 @@ export default function EditItemScreen() {
     );
   }
 
-  // Transform the item data to match ItemFormData structure
-  const initialValues: ItemFormData = {
-    ...item,
-    ingredients: (item.ingredients || []).map((ingredient) =>
-      typeof ingredient === "string" ? { value: ingredient } : ingredient
-    ),
-  };
-
   return (
     <EditItemForm
-      initialValues={initialValues}
+      initialValues={item}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       isSaving={isEditing}
       isDeleting={isDeleting}
+      error={error}
     />
   );
 }

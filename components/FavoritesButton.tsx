@@ -1,7 +1,7 @@
 import React from "react";
 import { Button, ButtonIcon } from "@/components/ui/button";
 import { FavouriteIcon } from "@/components/ui/icon";
-import { useFavorites } from "@/context/FavoritesContext";
+import { useFavorites } from "@/hooks/useFavorites"; // Updated import path
 
 interface FavoriteButtonProps {
   itemId: string;
@@ -20,9 +20,14 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 
   const isFavorited = favoritedItemIds.includes(itemId);
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (!isLoading && !disabled) {
-      toggleFavorite(itemId, !isFavorited);
+      try {
+        await toggleFavorite(itemId, !isFavorited);
+      } catch (error) {
+        console.error("Failed to toggle favorite:", error);
+        // Could add toast notification here if you have one
+      }
     }
   };
 

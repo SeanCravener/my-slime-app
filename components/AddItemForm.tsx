@@ -114,6 +114,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
       // Update form data with uploaded URLs
       uploadResults.forEach(({ fieldPath, url }) => {
+        console.log(fieldPath);
+        console.log(url);
         if (fieldPath === "main_image") {
           finalData.main_image = url;
         } else if (fieldPath.startsWith("instructions.")) {

@@ -9,6 +9,7 @@ import {
 import { Session, AuthChangeEvent, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { router } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
   session: Session | null;
@@ -33,6 +34,8 @@ interface AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
+
   const [authState, setAuthState] = useState<AuthState>({
     session: null,
     isLoading: true,
@@ -74,9 +77,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (isMounted) {
         setAuthState((prevState) => ({ ...prevState, session }));
 
-        // Log auth events for debugging (remove in production)
-        if (process.env.NODE_ENV === "development") {
-          console.log("Auth event:", event, session?.user?.email);
+        // Clear favorites cache on auth changes
+        if (event === "SIGNED_OUT") {
+          queryClient.removeQueries({ queryKey: ["favorites"] });
+          queryClient.removeQueries({ queryKey: ["items", "favorited"] });
+        } else if (event === "SIGNED_IN") {
+          queryClient.invalidateQueries({ queryKey: ["favorites"] });
         }
       }
     });

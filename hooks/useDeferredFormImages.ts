@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 
 interface LocalImage {
@@ -20,6 +21,18 @@ export function useDeferredFormImages() {
   const [localImages, setLocalImages] = useState<LocalImages>({});
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Helper function to get MIME type from extension
+  const getMimeType = (extension: string): string => {
+    const mimeTypes: { [key: string]: string } = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+    };
+    return mimeTypes[extension.toLowerCase()] || "image/jpeg";
+  };
 
   // Set a local image for a field
   const setLocalImage = useCallback(
@@ -62,12 +75,27 @@ export function useDeferredFormImages() {
     const path = `${timestamp}_${randomString}.${extension}`;
 
     let file;
+
     if (Platform.OS === "web") {
+      // Web: Use fetch and blob
       const response = await fetch(uri);
       file = await response.blob();
     } else {
-      const response = await fetch(uri);
-      file = await response.blob();
+      // Mobile: Use FileSystem to read as base64, then convert to blob
+      try {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Convert base64 to blob
+        const response = await fetch(
+          `data:image/${extension};base64,${base64}`
+        );
+        file = await response.blob();
+      } catch (error) {
+        console.error("Error reading file on mobile:", error);
+        throw new Error("Failed to read image file on mobile device");
+      }
     }
 
     const { data, error } = await supabase.storage
