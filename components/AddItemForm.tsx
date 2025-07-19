@@ -6,7 +6,6 @@ import { itemFormSchema } from "@/lib/schemas";
 import { ItemFormData } from "@/types/item";
 import { useAddItem } from "@/hooks/useAddItem";
 import { useDeferredFormImages } from "@/hooks/useDeferredFormImages";
-import { supabase } from "@/lib/supabase";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -33,8 +32,6 @@ import { CategorySelect } from "@/components/CategorySelect";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { IngredientsList } from "@/components/IngredientsList";
 import { InstructionsList } from "@/components/InstructionsList";
-
-import { deleteStorageFile } from "@/lib/storage";
 
 interface AddItemFormProps {
   userId: string;
@@ -97,25 +94,24 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   });
 
   const onSubmit = async (data: ItemFormData) => {
-    console.log("Form submitted", data);
-
-    let uploadedUrls: string[] = [];
+    console.log("🚀 Form submitted", data);
 
     try {
-      // First, upload all local images
-      const uploadResults = await uploadAllImages();
-      console.log("Upload results:", uploadResults);
+      // Validate we have required images
+      if (!hasLocalImage("main_image") && !data.main_image) {
+        throw new Error("Main image is required");
+      }
 
-      // Track uploaded URLs for potential cleanup
-      uploadedUrls = uploadResults.map((result) => result.url);
+      // Upload all local images first
+      console.log("📤 Starting image uploads...");
+      const uploadResults = await uploadAllImages();
+      console.log("✅ Upload results:", uploadResults);
 
       // Create a clean copy of the data
       let finalData = { ...data };
 
       // Update form data with uploaded URLs
       uploadResults.forEach(({ fieldPath, url }) => {
-        console.log(fieldPath);
-        console.log(url);
         if (fieldPath === "main_image") {
           finalData.main_image = url;
         } else if (fieldPath.startsWith("instructions.")) {
@@ -129,49 +125,30 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         }
       });
 
-      // Ensure we don't have any placeholder values
-      if (finalData.main_image === "pending" || finalData.main_image === "") {
-        if (hasLocalImage("main_image")) {
-          console.log("Main image failed to upload");
-        }
+      if (
+        !finalData.main_image ||
+        finalData.main_image === "will-be-uploaded"
+      ) {
+        throw new Error("Failed to upload main image");
       }
-
-      console.log("Final data to submit:", finalData);
 
       // Submit with uploaded URLs
       addItemMutation.mutate(finalData, {
         onSuccess: (item) => {
           reset();
           clearAllLocalImages();
-          onSuccess(item);
+
+          // Delay navigation to prevent view hierarchy conflicts
+          setTimeout(() => {
+            onSuccess(item);
+          }, 100);
         },
         onError: async (error) => {
-          console.error("Add item error:", error);
-          // Clean up uploaded images if submission fails
-          if (uploadedUrls.length > 0) {
-            console.log("Cleaning up uploaded images after failure");
-            for (const url of uploadedUrls) {
-              try {
-                const path = url.split("/").pop();
-                if (path) {
-                  const bucket = url.includes("instruction-images")
-                    ? "instruction-images"
-                    : "item-images";
-                  await supabase.storage.from(bucket).remove([path]);
-                }
-              } catch (cleanupError) {
-                console.error("Error cleaning up image:", cleanupError);
-              }
-            }
-          }
+          throw error;
         },
       });
     } catch (error) {
       console.error("Form submission error:", error);
-      // Clean up any uploaded images if we failed before submission
-      if (uploadedUrls.length > 0) {
-        await Promise.all(uploadedUrls.map((url) => deleteStorageFile(url)));
-      }
     }
   };
 
@@ -180,28 +157,17 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   // Handle main image selection
   const handleMainImagePicked = (uri: string) => {
     if (uri) {
+      console.log("🖼️ Main image selected:", uri);
       setLocalImage("main_image", uri, "item-images");
       // Don't set a value in the form, let the custom resolver handle it
     } else {
+      console.log("🗑️ Main image cleared");
       clearLocalImage("main_image");
     }
   };
 
-  // Debug form state
-  React.useEffect(() => {
-    console.log("Form validation state:", {
-      isValid: formState.isValid,
-      errors: formState.errors,
-      values: {
-        title: watch("title"),
-        description: watch("description"),
-        main_image: watch("main_image"),
-        category_id: watch("category_id"),
-        ingredientsCount: watch("ingredients")?.length,
-        instructionsCount: watch("instructions")?.length,
-      },
-    });
-  }, [formState.isValid, formState.errors, watch]);
+  // Determine current error to display
+  const displayError = addItemMutation.error || (formState.errors as any)?.root;
 
   return (
     <Box className="flex-1">
@@ -369,7 +335,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
       {/* Error Dialog */}
       <AlertDialog
-        isOpen={!!addItemMutation.error}
+        isOpen={!!displayError}
         onClose={() => addItemMutation.reset()}
       >
         <AlertDialogBackdrop />
@@ -384,8 +350,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           </AlertDialogHeader>
           <AlertDialogBody>
             <Text className="text-muted-foreground">
-              {addItemMutation.error instanceof Error
-                ? addItemMutation.error.message
+              {displayError instanceof Error
+                ? displayError.message
                 : "Failed to add recipe. Please try again."}
             </Text>
           </AlertDialogBody>
@@ -401,6 +367,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
               <Spinner size="large" />
               <Text size="md" className="font-medium text-foreground">
                 Uploading Images...
+              </Text>
+              <Text size="sm" className="text-muted-foreground">
+                Please don't close the app
               </Text>
             </VStack>
           </ModalBody>

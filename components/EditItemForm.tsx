@@ -27,7 +27,6 @@ import {
   AlertDialogBody,
 } from "@/components/ui/alert-dialog";
 import { Icon, AlertCircleIcon, CloseIcon } from "@/components/ui/icon";
-import { X } from "lucide-react-native";
 import { FormSection } from "@/components/FormSection";
 import { ItemFormField } from "@/components/ItemFormField";
 import { CategorySelect } from "@/components/CategorySelect";
@@ -54,7 +53,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // Deferred image handling
   const {
     setLocalImage,
     clearLocalImage,
@@ -68,13 +66,10 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
   // Custom resolver that handles deferred images
   const customResolver = React.useCallback(
     async (data: any, context: any, options: any) => {
-      // If we have a local image but no URL, temporarily satisfy validation
       const dataToValidate = { ...data };
       if (hasLocalImage("main_image") && !dataToValidate.main_image) {
         dataToValidate.main_image = "will-be-uploaded";
       }
-
-      // Run the normal validation
       return zodResolver(itemFormSchema)(dataToValidate, context, options);
     },
     [hasLocalImage]
@@ -103,23 +98,19 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
   }, [initialValues, reset, clearAllLocalImages]);
 
   const handleFormSubmit = async (data: ItemFormData) => {
-    console.log("Form submitted", data);
-
     try {
-      // Track images that need cleanup
       const imagesToCleanup: string[] = [];
 
-      // First, upload all local images
+      // Upload all local images
       const uploadResults = await uploadAllImages();
-      console.log("Upload results:", uploadResults);
 
-      // Create a clean copy of the data
+      // Create final data with uploaded URLs
       let finalData = { ...data };
 
       // Update form data with uploaded URLs and track replaced images
       uploadResults.forEach(({ fieldPath, url }) => {
         if (fieldPath === "main_image") {
-          // If replacing main image, mark old one for cleanup
+          // Mark old main image for cleanup if replacing
           if (initialValues.main_image && initialValues.main_image !== url) {
             imagesToCleanup.push(initialValues.main_image);
           }
@@ -129,7 +120,7 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
           if (match) {
             const index = parseInt(match[1]);
             if (finalData.instructions[index]) {
-              // If replacing instruction image, mark old one for cleanup
+              // Mark old instruction image for cleanup if replacing
               const oldUrl = initialValues.instructions[index]?.["image-url"];
               if (oldUrl && oldUrl !== url) {
                 imagesToCleanup.push(oldUrl);
@@ -140,12 +131,11 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
         }
       });
 
-      // Also check for removed instruction images
+      // Check for removed instruction images
       initialValues.instructions.forEach((instruction, index) => {
         if (instruction["image-url"]) {
-          // If this instruction still exists in final data
           if (finalData.instructions[index]) {
-            // If the image was removed (not replaced)
+            // Image was removed (not replaced)
             if (
               !finalData.instructions[index]["image-url"] &&
               !hasLocalImage(`instructions.${index}.image-url`)
@@ -158,9 +148,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
           }
         }
       });
-
-      console.log("Final data to submit:", finalData);
-      console.log("Images to cleanup:", imagesToCleanup);
 
       // Submit with uploaded URLs and cleanup list
       onSubmit({ ...finalData, imagesToCleanup });
@@ -180,15 +167,12 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
 
   const isFormDisabled = isSaving || isDeleting || isUploading;
 
-  // Handle main image selection
   const handleMainImagePicked = (uri: string) => {
     if (uri) {
       setLocalImage("main_image", uri, "item-images");
-      // Clear the form value to indicate change
       setValue("main_image", "");
     } else {
       clearLocalImage("main_image");
-      // Restore original value
       setValue("main_image", initialValues.main_image);
     }
   };
@@ -204,7 +188,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <VStack space="md">
-          {/* Main Image Section */}
           <FormSection>
             <ImageUploadField
               label="Recipe Photo"
@@ -222,7 +205,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
             />
           </FormSection>
 
-          {/* Recipe Details Section */}
           <FormSection title="Recipe Details">
             <VStack space="lg">
               <ItemFormField
@@ -254,7 +236,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
             </VStack>
           </FormSection>
 
-          {/* Ingredients Section */}
           <FormSection
             title="Ingredients"
             subtitle={`${ingredientsArray.fields.length}/20 ingredients`}
@@ -271,7 +252,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
             />
           </FormSection>
 
-          {/* Instructions Section */}
           <FormSection
             title="Steps"
             subtitle={`${instructionsArray.fields.length}/15 steps`}
@@ -283,7 +263,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
                 instructionsArray.update(index, instruction)
               }
               onDelete={(index) => {
-                // Clear local image for this instruction if it exists
                 clearLocalImage(`instructions.${index}.image-url`);
                 instructionsArray.remove(index);
 
@@ -328,7 +307,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
             />
           </FormSection>
 
-          {/* Action Buttons */}
           <HStack space="md" className="mt-4">
             <Button
               variant="outline"
@@ -360,7 +338,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
         </VStack>
       </ScrollView>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         isOpen={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -404,7 +381,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Error Dialog */}
       <AlertDialog isOpen={!!error} onClose={() => {}}>
         <AlertDialogBackdrop />
         <AlertDialogContent>
@@ -425,7 +401,6 @@ export const EditItemForm: React.FC<EditItemFormProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Upload Progress Modal */}
       <Modal isOpen={isUploading} onClose={() => {}}>
         <ModalBackdrop />
         <ModalContent className="w-4/5 max-w-sm">

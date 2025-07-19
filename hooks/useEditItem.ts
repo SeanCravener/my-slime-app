@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import { deleteStorageFile } from "@/lib/storage";
 
 interface EditItemData extends ItemFormData {
-  // Optional array of old image URLs that need to be cleaned up
   imagesToCleanup?: string[];
 }
 
@@ -16,7 +15,7 @@ export function useEditItem(itemId: string) {
     mutationFn: async (data: EditItemData) => {
       const { imagesToCleanup, ...itemData } = data;
 
-      // Update item data - ingredients and instructions are now stored as objects
+      // Update item data
       const { error: itemError } = await supabase
         .from("items")
         .update({
@@ -24,15 +23,15 @@ export function useEditItem(itemId: string) {
           description: itemData.description,
           main_image: itemData.main_image,
           category_id: itemData.category_id,
-          ingredients: itemData.ingredients as any, // Already Ingredient[] objects
-          instructions: itemData.instructions as any, // Already Instruction[] objects
+          ingredients: itemData.ingredients as any,
+          instructions: itemData.instructions as any,
           updated_at: new Date().toISOString(),
         })
         .eq("id", itemId);
 
       if (itemError) throw itemError;
 
-      // Clean up old images that were replaced
+      // Clean up replaced images
       if (imagesToCleanup && imagesToCleanup.length > 0) {
         await Promise.all(imagesToCleanup.map((url) => deleteStorageFile(url)));
       }
@@ -40,14 +39,17 @@ export function useEditItem(itemId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
       queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-      // Navigate back on success - let the form handle success messaging
-      router.back();
+
+      // Delay navigation to prevent view hierarchy conflicts
+      setTimeout(() => {
+        router.back();
+      }, 100);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      // Get all images associated with the item before deletion
+      // Get all images before deletion
       const { data: item } = await supabase
         .from("items")
         .select("main_image, instructions")
@@ -63,7 +65,7 @@ export function useEditItem(itemId: string) {
 
         if (error) throw error;
 
-        // Then clean up all images
+        // Clean up all images
         const images = [
           item.main_image,
           ...(item.instructions ?? [])
@@ -79,7 +81,11 @@ export function useEditItem(itemId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
-      router.replace("/");
+
+      // Delay navigation to prevent view hierarchy conflicts
+      setTimeout(() => {
+        router.replace("/");
+      }, 100);
     },
   });
 
@@ -88,7 +94,6 @@ export function useEditItem(itemId: string) {
     deleteItem: deleteMutation.mutate,
     isEditing: editMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    // Return error state for the form to handle
     error: editMutation.error || deleteMutation.error,
   };
 }

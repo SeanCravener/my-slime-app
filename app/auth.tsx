@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SafeAreaView, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -59,89 +59,87 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{
-          paddingTop: 20,
-          paddingBottom: 40,
-          flexGrow: 1,
-        }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/** Back Button */}
-        <Box className="px-6 mb-8">
-          <Pressable onPress={handleBackPress} hitSlop={8}>
-            <ArrowLeft size={24} color="#000000" />
-          </Pressable>
-        </Box>
-        {/* Title and Toggle Section */}
-        <VStack space="xl" className="items-center px-6 mb-8">
-          {/* Title */}
-          <Text className="text-3xl font-bold text-foreground text-center">
-            {mode === "signIn" ? "Welcome Back!" : "Join Us!"}
-          </Text>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{
+        paddingTop: 20,
+        paddingBottom: 40,
+        flexGrow: 1,
+      }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/** Back Button */}
+      <Box className="px-6 mb-8">
+        <Pressable onPress={handleBackPress} hitSlop={8}>
+          <ArrowLeft size={24} color="#000000" />
+        </Pressable>
+      </Box>
+      {/* Title and Toggle Section */}
+      <VStack space="xl" className="items-center px-6 mb-8">
+        {/* Title */}
+        <Text className="text-3xl font-bold text-foreground text-center">
+          {mode === "signIn" ? "Welcome Back!" : "Join Us!"}
+        </Text>
 
-          {/* Mode Toggle */}
-          <Box className="bg-muted/30 p-1 rounded-xl">
-            <HStack space="xs">
-              <Button
-                variant={mode === "signIn" ? "solid" : "outline"}
-                size="md"
-                onPress={() => handleModeChange("signIn")}
-                isDisabled={isLoading}
-                className={`min-w-24 ${
+        {/* Mode Toggle */}
+        <Box className="bg-muted/30 p-1 rounded-xl">
+          <HStack space="xs">
+            <Button
+              variant={mode === "signIn" ? "solid" : "outline"}
+              size="md"
+              onPress={() => handleModeChange("signIn")}
+              isDisabled={isLoading}
+              className={`min-w-24 ${
+                mode === "signIn"
+                  ? "bg-primary"
+                  : "bg-transparent border-transparent"
+              }`}
+            >
+              <ButtonText
+                className={
                   mode === "signIn"
-                    ? "bg-primary"
-                    : "bg-transparent border-transparent"
-                }`}
+                    ? "text-primary-foreground font-medium"
+                    : "text-muted-foreground"
+                }
               >
-                <ButtonText
-                  className={
-                    mode === "signIn"
-                      ? "text-primary-foreground font-medium"
-                      : "text-muted-foreground"
-                  }
-                >
-                  Sign In
-                </ButtonText>
-              </Button>
+                Sign In
+              </ButtonText>
+            </Button>
 
-              <Button
-                variant={mode === "signUp" ? "solid" : "outline"}
-                size="md"
-                onPress={() => handleModeChange("signUp")}
-                isDisabled={isLoading}
-                className={`min-w-24 ${
+            <Button
+              variant={mode === "signUp" ? "solid" : "outline"}
+              size="md"
+              onPress={() => handleModeChange("signUp")}
+              isDisabled={isLoading}
+              className={`min-w-24 ${
+                mode === "signUp"
+                  ? "bg-primary"
+                  : "bg-transparent border-transparent"
+              }`}
+            >
+              <ButtonText
+                className={
                   mode === "signUp"
-                    ? "bg-primary"
-                    : "bg-transparent border-transparent"
-                }`}
+                    ? "text-primary-foreground font-medium"
+                    : "text-muted-foreground"
+                }
               >
-                <ButtonText
-                  className={
-                    mode === "signUp"
-                      ? "text-primary-foreground font-medium"
-                      : "text-muted-foreground"
-                  }
-                >
-                  Sign Up
-                </ButtonText>
-              </Button>
-            </HStack>
-          </Box>
-        </VStack>
-        {/* Auth Form */}
-        <Box className="flex-1">
-          <AuthForm
-            mode={mode}
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-            error={error ? ({ message: error } as Error) : null}
-          />
+                Sign Up
+              </ButtonText>
+            </Button>
+          </HStack>
         </Box>
-      </ScrollView>
-    </SafeAreaView>
+      </VStack>
+      {/* Auth Form */}
+      <Box className="flex-1">
+        <AuthForm
+          mode={mode}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          error={error ? ({ message: error } as Error) : null}
+        />
+      </Box>
+    </ScrollView>
   );
 }

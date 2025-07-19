@@ -4,11 +4,9 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Button, ButtonIcon } from "@/components/ui/button";
 import { useSearchItems } from "@/hooks/useItems";
 import { SearchBar } from "@/components/SearchBar";
 import { ItemList } from "@/components/ItemList";
-import { SettingsIcon } from "lucide-react-native";
 import { useDebouncedCallback } from "use-debounce";
 
 export default function SearchScreen() {
@@ -25,11 +23,6 @@ export default function SearchScreen() {
   const debouncedSearch = useDebouncedCallback((query: string) => {
     setSearchQuery(query);
   }, 300);
-
-  const handleSettingsPress = () => {
-    // TODO: Navigate to settings
-    console.log("Settings pressed");
-  };
 
   return (
     <>

@@ -15,10 +15,11 @@ export const BackButton: React.FC<BackButtonProps> = ({
   disabled = false,
 }) => {
   const handlePress = () => {
+    console.log(router.canGoBack());
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/");
+      router.replace("/(tabs)");
     }
   };
 

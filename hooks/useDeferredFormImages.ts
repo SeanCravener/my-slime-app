@@ -1,11 +1,12 @@
 import { useState, useCallback } from "react";
 import { Platform } from "react-native";
-import * as FileSystem from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 
 interface LocalImage {
   uri: string;
   bucket: "item-images" | "instruction-images";
+  fileName?: string;
+  fileType?: string;
 }
 
 interface LocalImages {
@@ -22,34 +23,24 @@ export function useDeferredFormImages() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Helper function to get MIME type from extension
-  const getMimeType = (extension: string): string => {
-    const mimeTypes: { [key: string]: string } = {
-      jpg: "image/jpeg",
-      jpeg: "image/jpeg",
-      png: "image/png",
-      gif: "image/gif",
-      webp: "image/webp",
-    };
-    return mimeTypes[extension.toLowerCase()] || "image/jpeg";
-  };
-
-  // Set a local image for a field
   const setLocalImage = useCallback(
     (
       fieldPath: string,
       uri: string,
       bucket: "item-images" | "instruction-images"
     ) => {
+      const fileName = uri.split("/").pop() || `image_${Date.now()}.jpg`;
+      const extension = fileName.split(".").pop()?.toLowerCase() || "jpg";
+      const fileType = `image/${extension === "jpg" ? "jpeg" : extension}`;
+
       setLocalImages((prev) => ({
         ...prev,
-        [fieldPath]: { uri, bucket },
+        [fieldPath]: { uri, bucket, fileName, fileType },
       }));
     },
     []
   );
 
-  // Clear a local image
   const clearLocalImage = useCallback((fieldPath: string) => {
     setLocalImages((prev) => {
       const newImages = { ...prev };
@@ -58,63 +49,79 @@ export function useDeferredFormImages() {
     });
   }, []);
 
-  // Clear all local images
   const clearAllLocalImages = useCallback(() => {
     setLocalImages({});
   }, []);
 
-  // Upload a single image
   const uploadImage = async (localImage: LocalImage): Promise<string> => {
-    console.log("Uploading image:", localImage);
-    const { uri, bucket } = localImage;
+    const { uri, bucket, fileName, fileType } = localImage;
 
-    const filename = uri.split("/").pop() ?? "";
-    const extension = filename.split(".").pop()?.toLowerCase() ?? "";
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(7);
+    const extension = fileName?.split(".").pop() || "jpg";
     const path = `${timestamp}_${randomString}.${extension}`;
 
-    let file;
+    try {
+      let file: Blob;
 
-    if (Platform.OS === "web") {
-      // Web: Use fetch and blob
-      const response = await fetch(uri);
-      file = await response.blob();
-    } else {
-      // Mobile: Use FileSystem to read as base64, then convert to blob
-      try {
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
+      if (Platform.OS === "web") {
+        const response = await fetch(uri);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        file = await response.blob();
+      } else {
+        // Mobile platform - use direct file object
+        const fileObject = {
+          uri,
+          type: fileType || "image/jpeg",
+          name: fileName || `image_${timestamp}.jpg`,
+        } as any;
+
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .upload(path, fileObject, {
+            contentType: fileType || "image/jpeg",
+            upsert: false,
+          });
+
+        if (error) {
+          throw new Error(`Upload failed: ${error.message}`);
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from(bucket).getPublicUrl(path);
+
+        return publicUrl;
+      }
+
+      // Web upload path
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, {
+          contentType: fileType || "image/jpeg",
+          upsert: false,
         });
 
-        // Convert base64 to blob
-        const response = await fetch(
-          `data:image/${extension};base64,${base64}`
-        );
-        file = await response.blob();
-      } catch (error) {
-        console.error("Error reading file on mobile:", error);
-        throw new Error("Failed to read image file on mobile device");
+      if (error) {
+        throw new Error(`Upload failed: ${error.message}`);
       }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(path);
+
+      return publicUrl;
+    } catch (error) {
+      throw new Error(
+        `Failed to upload image: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
-
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(path, file);
-
-    if (error) {
-      console.error("Upload error:", error);
-      throw new Error(`Failed to upload image: ${error.message}`);
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(path);
-
-    return publicUrl;
   };
 
-  // Upload all local images and return URLs mapped to field paths
   const uploadAllImages = useCallback(async (): Promise<UploadResult[]> => {
     const entries = Object.entries(localImages);
     if (entries.length === 0) return [];
@@ -123,7 +130,7 @@ export function useDeferredFormImages() {
     setUploadProgress(0);
 
     const results: UploadResult[] = [];
-    const uploadedUrls: string[] = []; // Track for cleanup if needed
+    const uploadedPaths: { bucket: string; path: string }[] = [];
 
     try {
       for (let i = 0; i < entries.length; i++) {
@@ -132,29 +139,23 @@ export function useDeferredFormImages() {
         try {
           const url = await uploadImage(localImage);
           results.push({ fieldPath, url });
-          uploadedUrls.push(url);
 
-          // Update progress
+          // Track for cleanup on error
+          const path = url.split("/").pop();
+          if (path) {
+            uploadedPaths.push({ bucket: localImage.bucket, path });
+          }
+
           setUploadProgress((i + 1) / entries.length);
         } catch (error) {
-          // If any upload fails, clean up previously uploaded images
-          console.error(`Failed to upload image for ${fieldPath}:`, error);
-
-          // Clean up successfully uploaded images
-          for (const url of uploadedUrls) {
+          // Clean up uploaded images on error
+          for (const { bucket, path } of uploadedPaths) {
             try {
-              const path = url.split("/").pop();
-              if (path) {
-                const bucket = url.includes("instruction-images")
-                  ? "instruction-images"
-                  : "item-images";
-                await supabase.storage.from(bucket).remove([path]);
-              }
+              await supabase.storage.from(bucket).remove([path]);
             } catch (cleanupError) {
               console.error("Cleanup error:", cleanupError);
             }
           }
-
           throw error;
         }
       }
@@ -166,7 +167,6 @@ export function useDeferredFormImages() {
     }
   }, [localImages]);
 
-  // Check if a field has a local image
   const hasLocalImage = useCallback(
     (fieldPath: string): boolean => {
       return fieldPath in localImages;
@@ -174,7 +174,6 @@ export function useDeferredFormImages() {
     [localImages]
   );
 
-  // Get local image URI for preview
   const getLocalImageUri = useCallback(
     (fieldPath: string): string | undefined => {
       return localImages[fieldPath]?.uri;
