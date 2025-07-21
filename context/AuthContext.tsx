@@ -1,3 +1,4 @@
+// context/AuthContext.tsx - Complete updated file
 import {
   createContext,
   useContext,
@@ -21,6 +22,11 @@ interface AuthContextType {
     email: string,
     password: string,
     confirmPassword?: string
+  ) => Promise<void>;
+  signUpWithUsername: (
+    email: string,
+    password: string,
+    username: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -118,7 +124,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }
       throw new Error("An unexpected error occurred");
     }
-    router.replace("/");
   }, []);
 
   const signUp = useCallback(
@@ -158,7 +163,60 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
         throw new Error("An unexpected error occurred");
       }
-      router.replace("/");
+    },
+    []
+  );
+
+  const signUpWithUsername = useCallback(
+    async (email: string, password: string, username: string) => {
+      // Input validation
+      if (!email?.trim() || !password?.trim() || !username?.trim()) {
+        throw new Error("Email, password, and username are required");
+      }
+
+      try {
+        // Create auth user
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+
+        if (error) {
+          const friendlyError = mapAuthError(error);
+          throw new Error(friendlyError);
+        }
+
+        // Update profile with username
+        if (data.user) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({
+              username: username.trim(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", data.user.id);
+
+          if (profileError) {
+            console.error("Error updating profile:", profileError);
+            // Don't throw here, the user is created successfully
+          }
+        }
+
+        // For email confirmation flow
+        if (data.user && !data.session) {
+          throw new Error(
+            "Please check your email and click the confirmation link"
+          );
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("An unexpected error occurred");
+      }
     },
     []
   );
@@ -212,6 +270,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     isAuthenticated: !!authState.session?.user,
     signIn,
     signUp,
+    signUpWithUsername,
     signOut,
     resetPassword,
   };

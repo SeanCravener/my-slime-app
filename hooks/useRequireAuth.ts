@@ -1,6 +1,9 @@
+// hooks/useRequireAuth.ts
 import { useEffect, useRef } from "react";
 import { useRouter, type Href } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 interface UseRequireAuthOptions {
   redirectTo?: Href;
@@ -13,18 +16,21 @@ export const useRequireAuth = (options: UseRequireAuthOptions = {}) => {
   const router = useRouter();
   const hasRedirected = useRef(false);
 
+  // Reset redirect flag when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      hasRedirected.current = false;
+    }, [])
+  );
+
   useEffect(() => {
-    // Redirect unauthenticated users
     if (enabled && !isLoading && !isAuthenticated && !hasRedirected.current) {
       hasRedirected.current = true;
-
-      // Defer redirect to avoid render conflicts
       setTimeout(() => {
-        router.replace(redirectTo);
+        router.push(redirectTo);
       }, 0);
     }
 
-    // Reset redirect flag when user becomes authenticated
     if (isAuthenticated) {
       hasRedirected.current = false;
     }
