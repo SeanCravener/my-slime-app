@@ -9,6 +9,9 @@ interface EditButtonProps {
   disabled?: boolean;
 }
 
+// Was having issues with button not doing anything when testing in Android
+// Changing onPress to onPressIn fixees issue, but it is not ideal.
+// TODO: Make sure onPressIn won't cause issues or find fix for onPress not working.
 export const EditButton: React.FC<EditButtonProps> = ({
   onPress,
   size = "md",
@@ -19,9 +22,9 @@ export const EditButton: React.FC<EditButtonProps> = ({
     <Button
       variant={variant}
       size={size}
-      onPress={onPress}
+      onPressIn={onPress}
       isDisabled={disabled}
-      className="rounded-lg p-1"
+      className="w-10 h-10 rounded-lg p-1 ml-2 mr-2"
     >
       <ButtonIcon as={EditIcon} size={size} />
     </Button>
