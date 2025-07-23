@@ -18,7 +18,7 @@ import {
   AlertDialogBody,
 } from "@/components/ui/alert-dialog";
 import { ChangePasswordButton } from "@/components/ChangePasswordButton";
-import { router } from "expo-router";
+import { ThemeToggleButton } from "@/components/ThemeToggleButton";
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
@@ -83,6 +83,7 @@ export default function ProfileScreen() {
         </Card>
 
         <VStack space="md">
+          <ThemeToggleButton />
           <ChangePasswordButton />
           <Button
             variant="outline"

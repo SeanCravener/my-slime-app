@@ -249,7 +249,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
         {
-          redirectTo: "http://10.0.0.195:8081/auth/reset-password", // Use your dev server IP
+          redirectTo: "http://10.0.0.195:8081/auth/reset-password",
         }
       );
 
@@ -290,7 +290,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
-  // Add updatePassword to your AuthContext value
   const value: AuthContextType = {
     session: authState.session,
     user: authState.session?.user ?? null,
@@ -301,7 +300,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     signUpWithUsername,
     signOut,
     resetPassword,
-    updatePassword, // Add this line
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
