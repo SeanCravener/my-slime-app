@@ -1,17 +1,15 @@
-import React from "react";
+import React, { ComponentProps } from "react";
 import { useRouter } from "expo-router";
-import { HStack } from "@/components/ui/hstack";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Lock } from "lucide-react-native";
+import { Button, ButtonText, ButtonIcon } from "@/components/ui/button";
+import { LockIcon } from "@/components/ui/icon";
 
-interface ChangePasswordButtonProps {
-  variant?: "solid" | "outline" | "link";
-  size?: "sm" | "md" | "lg" | "xl";
-  disabled?: boolean;
-}
+interface ChangePasswordButtonProps extends ComponentProps<typeof Button> {}
 
+// Messing around with importing and extending Button Props instead of manually entering.
+// TODO: Need to test, research, and mess around with it more.
+// TODO: If it ends up being fine, can apply same logic to a lot of other components and reduce code significally.
 export const ChangePasswordButton: React.FC<ChangePasswordButtonProps> = ({
-  variant = "list-item",
+  variant = "outline",
   size = "md",
   disabled = false,
 }) => {
@@ -23,16 +21,14 @@ export const ChangePasswordButton: React.FC<ChangePasswordButtonProps> = ({
 
   return (
     <Button
-      variant="solid"
+      variant={variant}
       size={size}
       onPress={handlePress}
-      isDisabled={disabled}
+      isDisabled={disabled ?? undefined}
       className="w-full"
     >
-      <HStack space="sm" className="items-center">
-        <Lock size={16} color="#007AFF" />
-        <ButtonText className="text-primary">Change Password</ButtonText>
-      </HStack>
+      <ButtonIcon as={LockIcon} size="sm" />
+      <ButtonText className="text-primary">Change Password</ButtonText>
     </Button>
   );
 };
