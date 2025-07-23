@@ -17,6 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogBody,
 } from "@/components/ui/alert-dialog";
+import { ChangePasswordButton } from "@/components/ChangePasswordButton";
 import { router } from "expo-router";
 
 export default function ProfileScreen() {
@@ -82,14 +83,7 @@ export default function ProfileScreen() {
         </Card>
 
         <VStack space="md">
-          <Button
-            variant="outline"
-            size="lg"
-            onPress={() => router.push("/auth/reset-password")}
-            className="w-full"
-          >
-            <ButtonText className="text-destructive">Reset Password</ButtonText>
-          </Button>
+          <ChangePasswordButton />
           <Button
             variant="outline"
             size="lg"
