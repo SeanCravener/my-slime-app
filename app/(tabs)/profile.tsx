@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ChangePasswordButton } from "@/components/ChangePasswordButton";
 import { ThemeToggleButton } from "@/components/ThemeToggleButton";
+import { EditProfileButton } from "@/components/EditProfileButton";
+import { AdvancedSettingsButton } from "@/components/AdvancedSettingsButton";
 
 export default function ProfileScreen() {
   const { signOut } = useAuth();
@@ -83,8 +85,10 @@ export default function ProfileScreen() {
         </Card>
 
         <VStack space="md">
+          <EditProfileButton />
           <ThemeToggleButton />
           <ChangePasswordButton />
+          <AdvancedSettingsButton />
           <Button
             variant="outline"
             size="lg"
