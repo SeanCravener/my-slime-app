@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 
 interface LocalImage {
   uri: string;
-  bucket: "item-images" | "instruction-images";
+  bucket: "user-avatars" | "item-images" | "instruction-images";
   fileName?: string;
   fileType?: string;
 }
@@ -27,7 +27,7 @@ export function useDeferredFormImages() {
     (
       fieldPath: string,
       uri: string,
-      bucket: "item-images" | "instruction-images"
+      bucket: "user-avatars" | "item-images" | "instruction-images"
     ) => {
       const fileName = uri.split("/").pop() || `image_${Date.now()}.jpg`;
       const extension = fileName.split(".").pop()?.toLowerCase() || "jpg";

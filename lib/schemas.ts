@@ -36,6 +36,21 @@ export const ratingSchema = z.object({
   rating: z.number().min(1).max(5),
 });
 
+export const profileFormSchema = z.object({
+  username: z
+    .string()
+    .min(1, "Username is required")
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must be less than 20 characters")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Username can only contain letters, numbers, underscores, and hyphens"
+    ),
+  avatar_url: z.string().optional(),
+});
+
+export type ProfileFormData = z.infer<typeof profileFormSchema>;
+
 export type ItemFormSchema = z.infer<typeof itemFormSchema>;
 export type InstructionSchema = z.infer<typeof instructionSchema>;
 export type RatingSchema = z.infer<typeof ratingSchema>;

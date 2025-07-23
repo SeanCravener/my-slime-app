@@ -25,7 +25,7 @@ interface ImageUploadFieldProps {
   value?: string;
   onChange: (url: string) => void;
   label: string;
-  bucket?: "item-images" | "instruction-images";
+  bucket?: "item-images" | "instruction-images" | "user-avatars";
   disabled?: boolean;
   required?: boolean;
   helpText?: string;
