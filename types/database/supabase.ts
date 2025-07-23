@@ -229,6 +229,10 @@ export type Database = {
         Args: { user_email: string };
         Returns: boolean;
       };
+      delete_user: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
       get_searchable_text: {
         Args: { item_row: Database["public"]["Tables"]["items"]["Row"] };
         Returns: string;
