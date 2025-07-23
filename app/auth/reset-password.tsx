@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { ScrollView } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -21,42 +21,25 @@ import { Pressable } from "@/components/ui/pressable";
 import { Controller } from "react-hook-form";
 import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle } from "lucide-react-native";
 import { Spinner } from "@/components/ui/spinner";
-
-const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        "Password must contain uppercase, lowercase, number, and special character"
-      ),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+import { createPasswordSchema, CreatePasswordSchema } from "@/schemas/auth";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { updatePassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [isValidatingToken, setIsValidatingToken] = useState(true);
+  const [hasValidToken, setHasValidToken] = useState(false);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
+  } = useForm<CreatePasswordSchema>({
+    resolver: zodResolver(createPasswordSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",
@@ -64,31 +47,82 @@ export default function ResetPasswordScreen() {
     mode: "onBlur",
   });
 
-  // Check if we have a valid token from deep link
+  // Check for URL parameters when component mounts
   useEffect(() => {
-    const checkTokenStatus = () => {
-      if (params.tokenValid === "true") {
-        setTokenValid(true);
-      } else if (params.error) {
-        setError(params.error as string);
-        setTokenValid(false);
-      } else {
-        // No deep link params, user navigated manually
-        setTokenValid(false);
-        setError(
-          "Please use the reset link from your email to access this page."
-        );
+    const checkUrlParams = async () => {
+      try {
+        // In a web environment or when redirected from email, check for hash parameters
+        const hash = window?.location?.hash || "";
+        const search = window?.location?.search || "";
+
+        console.log("URL hash:", hash);
+        console.log("URL search:", search);
+
+        let params: URLSearchParams;
+
+        // Supabase usually puts tokens in the hash (#)
+        if (hash) {
+          params = new URLSearchParams(hash.substring(1)); // Remove the # character
+        } else if (search) {
+          params = new URLSearchParams(search.substring(1)); // Remove the ? character
+        } else {
+          // No URL parameters found
+          setError(
+            "Please use the reset link from your email to access this page."
+          );
+          setIsValidatingToken(false);
+          return;
+        }
+
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+        const type = params.get("type");
+
+        console.log("Found params:", {
+          accessToken: accessToken ? "present" : "missing",
+          refreshToken: refreshToken ? "present" : "missing",
+          type,
+        });
+
+        if (!accessToken || !refreshToken || type !== "recovery") {
+          setError("Invalid reset link. Please request a new password reset.");
+          setIsValidatingToken(false);
+          return;
+        }
+
+        // Set session with the tokens
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          setError(
+            "Invalid or expired reset link. Please request a new password reset."
+          );
+          setIsValidatingToken(false);
+          return;
+        }
+
+        console.log("Session set successfully");
+        setHasValidToken(true);
+        setIsValidatingToken(false);
+      } catch (err) {
+        console.error("Token validation error:", err);
+        setError("Failed to validate reset link. Please try again.");
+        setIsValidatingToken(false);
       }
     };
 
-    checkTokenStatus();
-  }, [params]);
+    checkUrlParams();
+  }, []);
 
   const handleBack = () => {
     router.replace("/auth");
   };
 
-  const onSubmit = async (data: ResetPasswordFormData) => {
+  const onSubmit = async (data: CreatePasswordSchema) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -113,24 +147,29 @@ export default function ResetPasswordScreen() {
     router.replace("/auth/forgot-password");
   };
 
-  // Loading state
-  if (tokenValid === null) {
+  // Loading state while validating token
+  if (isValidatingToken) {
     return (
       <Box className="flex-1 bg-background">
         <Box className="flex-1 justify-center items-center px-6">
           <VStack space="lg" className="items-center">
             <Spinner size="large" />
-            <Text className="text-lg font-medium text-foreground">
-              Checking reset link...
-            </Text>
+            <VStack space="sm" className="items-center">
+              <Text className="text-lg font-medium text-foreground">
+                Validating Reset Link
+              </Text>
+              <Text className="text-muted-foreground text-center">
+                Please wait while we verify your password reset request...
+              </Text>
+            </VStack>
           </VStack>
         </Box>
       </Box>
     );
   }
 
-  // Error state for invalid tokens
-  if (!tokenValid || (error && !isSuccess)) {
+  // Error state for invalid/expired tokens
+  if (error && !hasValidToken) {
     return (
       <ScrollView className="flex-1 bg-background">
         <Box className="flex-1 px-6 py-12">
@@ -145,8 +184,7 @@ export default function ResetPasswordScreen() {
                   Invalid Reset Link
                 </Heading>
                 <Text className="text-muted-foreground text-center text-base">
-                  {error ||
-                    "Please use the reset link from your email to access this page."}
+                  {error}
                 </Text>
               </VStack>
             </VStack>
@@ -229,7 +267,7 @@ export default function ResetPasswordScreen() {
                 Create New Password
               </Heading>
               <Text className="text-muted-foreground text-base">
-                Enter your new password below.
+                Please enter your new password below.
               </Text>
             </VStack>
           </VStack>
@@ -351,7 +389,7 @@ export default function ResetPasswordScreen() {
             />
 
             {/* Error Display */}
-            {error && tokenValid && (
+            {error && hasValidToken && (
               <Box className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
                 <Text className="text-destructive text-sm text-center">
                   {error}

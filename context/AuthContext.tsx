@@ -10,7 +10,6 @@ import {
 import { Session, AuthChangeEvent, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { router } from "expo-router";
-import * as Linking from "expo-linking";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
@@ -246,14 +245,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     try {
-      // Create the proper deep link URL for your app
-      const resetPasswordURL = Linking.createURL("reset-password");
-      console.log("Reset URL:", resetPasswordURL); // Should be: myslimeapp://reset-password
-
+      // Use the development server URL for redirect
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
         {
-          redirectTo: resetPasswordURL,
+          redirectTo: "http://10.0.0.195:8081/auth/reset-password", // Use your dev server IP
         }
       );
 
@@ -268,7 +264,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       throw new Error("An unexpected error occurred");
     }
   }, []);
-
   const updatePassword = useCallback(async (newPassword: string) => {
     if (!newPassword?.trim()) {
       throw new Error("New password is required");

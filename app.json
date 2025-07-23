@@ -5,21 +5,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myslimeapp",
+    "scheme": "my-slime-app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
-    },
-    "linking": {
-      "scheme": "myslimeapp",
-      "prefixes": [
-        "myslimeapp://",
-        "https://yourapp.com",
-        "http://localhost:8081"
-      ]
     },
     "ios": {
       "supportsTablet": true,
@@ -42,7 +34,7 @@
               "host": "yourapp.com"
             },
             {
-              "scheme": "myslimeapp"
+              "scheme": "my-slime-app"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
