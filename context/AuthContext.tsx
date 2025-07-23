@@ -10,6 +10,7 @@ import {
 import { Session, AuthChangeEvent, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { router } from "expo-router";
+import * as Linking from "expo-linking";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
@@ -30,6 +31,7 @@ interface AuthContextType {
   ) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>; // Add this line
 }
 
 interface AuthState {
@@ -244,10 +246,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     try {
+      // Create the proper deep link URL for your app
+      const resetPasswordURL = Linking.createURL("reset-password");
+      console.log("Reset URL:", resetPasswordURL); // Should be: myslimeapp://reset-password
+
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
         {
-          redirectTo: `${window.location.origin}/auth/reset-password`,
+          redirectTo: resetPasswordURL,
         }
       );
 
@@ -263,6 +269,33 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  const updatePassword = useCallback(async (newPassword: string) => {
+    if (!newPassword?.trim()) {
+      throw new Error("New password is required");
+    }
+
+    if (newPassword.length < 8) {
+      throw new Error("Password must be at least 8 characters long");
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        const friendlyError = mapAuthError(error);
+        throw new Error(friendlyError);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("An unexpected error occurred");
+    }
+  }, []);
+
+  // Add updatePassword to your AuthContext value
   const value: AuthContextType = {
     session: authState.session,
     user: authState.session?.user ?? null,
@@ -273,6 +306,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     signUpWithUsername,
     signOut,
     resetPassword,
+    updatePassword, // Add this line
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
