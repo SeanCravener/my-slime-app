@@ -7,6 +7,12 @@ export default function SetttingsLayout() {
   return (
     <Stack>
       <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="advanced"
         options={{
           headerShown: false,
