@@ -40,6 +40,7 @@ function ThemedApp() {
               <Stack.Screen name="item" options={{ headerShown: false }} />
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="settings" options={{ headerShown: false }} />
+              <Stack.Screen name="legal" options={{ headerShown: false }} />
               <Stack.Screen
                 name="+not-found"
                 options={{
