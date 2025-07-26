@@ -1,7 +1,8 @@
-import React from "react";
+import Reac, { useEffect } from "react";
 import { ScrollView, Image } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useItem } from "@/hooks/useItem";
+import { useIncrementView } from "@/hooks/useIncrementView";
 import { useAuth } from "@/context/AuthContext";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -23,6 +24,19 @@ export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams();
   const { data: item, isLoading } = useItem(id as string);
   const { session } = useAuth();
+  const incrementView = useIncrementView();
+
+  // Track view when item loads (only once per session)
+  useEffect(() => {
+    if (item && id && !isLoading) {
+      // Only increment view if user is not the owner to avoid inflating own view counts
+      const isOwner = session?.user?.id === item.user_id;
+
+      if (!isOwner) {
+        incrementView.mutate({ itemId: id as string });
+      }
+    }
+  }, [item, id, isLoading, session?.user?.id, incrementView]);
 
   const handleStartRecipe = () => {
     router.push(`/item/${id}/instructions`);

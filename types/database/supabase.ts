@@ -103,6 +103,7 @@ export type Database = {
           title: string;
           updated_at: string;
           user_id: string;
+          view_count: number | null;
         };
         Insert: {
           average_rating?: number | null;
@@ -116,6 +117,7 @@ export type Database = {
           title: string;
           updated_at?: string;
           user_id: string;
+          view_count?: number | null;
         };
         Update: {
           average_rating?: number | null;
@@ -129,6 +131,7 @@ export type Database = {
           title?: string;
           updated_at?: string;
           user_id?: string;
+          view_count?: number | null;
         };
         Relationships: [
           {
@@ -236,6 +239,10 @@ export type Database = {
       get_searchable_text: {
         Args: { item_row: Database["public"]["Tables"]["items"]["Row"] };
         Returns: string;
+      };
+      increment_view_count: {
+        Args: { item_id: string };
+        Returns: undefined;
       };
       search_items: {
         Args: { search_term: string; page_number: number; page_size: number };

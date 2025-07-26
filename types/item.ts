@@ -23,6 +23,7 @@ export interface ItemSummary {
   average_rating: number | null;
   category_id: number | null;
   category: string;
+  view_count: number;
 }
 
 export interface Author {
@@ -48,9 +49,14 @@ export type ItemFormData = {
 // NEW: Export the fetch mode type
 export type ItemFetchMode = "general" | "search" | "created" | "favorited";
 
+export type SortOption = "date" | "rating" | "views";
+export type SortOrder = "asc" | "desc";
+
 // NEW: Hook parameters interface
 export interface UseItemsParams {
   mode?: ItemFetchMode;
   searchQuery?: string;
   enabled?: boolean;
+  sortBy?: SortOption;
+  sortOrder?: SortOrder;
 }
