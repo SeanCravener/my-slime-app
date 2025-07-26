@@ -1,4 +1,4 @@
-import Reac, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { ScrollView, Image } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useItem } from "@/hooks/useItem";
@@ -17,6 +17,9 @@ import { BackButton } from "@/components/BackButton";
 const IMAGE_HEIGHT = 300;
 const CONTENT_OVERLAP = 40;
 
+// Session-based view tracking - persists across component mounts but resets on sign out/in
+const sessionViewedItems = new Set<string>();
+
 // TODO: Make image responsive.
 // TODO: Break up into smaller components if needed.
 // TODO: Go through all the styles and convert to tailwind classes.
@@ -26,17 +29,31 @@ export default function ItemDetailScreen() {
   const { session } = useAuth();
   const incrementView = useIncrementView();
 
+  // Track session changes to clear viewed items when user signs out/in
+  const currentUserId = useRef(session?.user?.id);
+
+  useEffect(() => {
+    // Clear viewed items if user changes (sign out/in)
+    if (currentUserId.current !== session?.user?.id) {
+      sessionViewedItems.clear();
+      currentUserId.current = session?.user?.id;
+    }
+  }, [session?.user?.id]);
+
   // Track view when item loads (only once per session)
   useEffect(() => {
-    if (item && id && !isLoading) {
-      // Only increment view if user is not the owner to avoid inflating own view counts
-      const isOwner = session?.user?.id === item.user_id;
+    if (item && id && !isLoading && session?.user) {
+      // Added session?.user check
+      const itemId = id as string;
+      const isOwner = session.user.id === item.user_id;
 
-      if (!isOwner) {
-        incrementView.mutate({ itemId: id as string });
+      // Only increment if not owner and haven't viewed this item in current session
+      if (!isOwner && !sessionViewedItems.has(itemId)) {
+        sessionViewedItems.add(itemId);
+        incrementView.mutate({ itemId });
       }
     }
-  }, [item, id, isLoading, session?.user?.id, incrementView]);
+  }, [item?.id, id, isLoading, session?.user?.id]);
 
   const handleStartRecipe = () => {
     router.push(`/item/${id}/instructions`);
