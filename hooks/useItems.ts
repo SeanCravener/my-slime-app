@@ -10,6 +10,16 @@ import {
 
 const ITEMS_PER_PAGE = 10;
 
+export interface FilterOptions {
+  categories?: number[];
+  ratings?: number[];
+}
+
+// Extend the existing UseItemsParams instead of creating a new interface
+interface ExtendedUseItemsParams extends UseItemsParams {
+  filters?: FilterOptions;
+}
+
 function transformItems(items: any[]): ItemSummaryWithAuthor[] {
   return items.map((item) => ({
     id: item.id,
@@ -41,13 +51,43 @@ function getSortColumn(sortBy: SortOption): string {
   }
 }
 
+function applyClientSideFilters(items: any[], filters?: FilterOptions): any[] {
+  if (!filters) return items;
+
+  return items.filter((item) => {
+    // Category filter
+    if (filters.categories && filters.categories.length > 0) {
+      if (!filters.categories.includes(item.category_id)) {
+        return false;
+      }
+    }
+
+    // Rating filter - show items that match any of the selected rating ranges
+    if (filters.ratings && filters.ratings.length > 0) {
+      const itemRating = item.average_rating || 0;
+      const matchesRating = filters.ratings.some((rating) => {
+        // Rating 5 = 4.5-5.0, Rating 4 = 3.5-4.49, etc.
+        const minRating = rating - 0.5;
+        const maxRating = rating + 0.49;
+        return itemRating >= minRating && itemRating <= maxRating;
+      });
+      if (!matchesRating) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
 export function useItems({
   mode = "general",
   searchQuery,
   enabled = true,
   sortBy = "date",
   sortOrder = "desc",
-}: UseItemsParams = {}) {
+  filters,
+}: ExtendedUseItemsParams = {}) {
   const { session } = useAuth();
   const userId = session?.user?.id;
 
@@ -59,7 +99,7 @@ export function useItems({
       (mode === "favorited" && userId));
 
   const query = useInfiniteQuery({
-    queryKey: ["items", mode, searchQuery, userId, sortBy, sortOrder],
+    queryKey: ["items", mode, searchQuery, userId, sortBy, sortOrder, filters],
     queryFn: async ({ pageParam }) => {
       const currentPage = typeof pageParam === "number" ? pageParam : 0;
       const from = currentPage * ITEMS_PER_PAGE;
@@ -70,8 +110,7 @@ export function useItems({
       const ascending = sortOrder === "asc";
 
       if (mode === "favorited" && userId) {
-        // For favorites, we need to sort by the item data, not the favorite creation date
-        // This is more complex as we need to join and sort properly
+        // For favorites, get items and apply filters/sorting client-side
         result = await supabase
           .from("user_favorites")
           .select(
@@ -81,19 +120,21 @@ export function useItems({
           `
           )
           .eq("user_id", userId)
-          .order("created_at", { ascending: false }) // Keep favorites ordered by when they were favorited
+          .order("created_at", { ascending: false })
           .range(from, to);
 
         if (result.error) throw result.error;
         let items =
           result.data?.map((fav: any) => fav.items_with_authors) || [];
 
-        // Apply client-side sorting for favorites since Supabase sorting is limited here
+        // Apply filters client-side
+        items = applyClientSideFilters(items, filters);
+
+        // Apply client-side sorting
         items = items.sort((a: any, b: any) => {
           let aValue = a[sortColumn];
           let bValue = b[sortColumn];
 
-          // Handle null values
           if (aValue === null && bValue === null) return 0;
           if (aValue === null) return ascending ? -1 : 1;
           if (bValue === null) return ascending ? 1 : -1;
@@ -116,30 +157,85 @@ export function useItems({
             items.length === ITEMS_PER_PAGE ? currentPage + 1 : undefined,
         };
       } else if (mode === "search" && searchQuery) {
-        result = await supabase
+        // Build the search query
+        let query = supabase
           .from("items_with_authors")
           .select("*")
           .or(`title.ilike.%${searchQuery}%`)
-          .order(sortColumn, { ascending })
-          .range(from, to);
+          .order(sortColumn, { ascending });
+
+        // Apply category filter
+        if (filters?.categories && filters.categories.length > 0) {
+          query = query.in("category_id", filters.categories);
+        }
+
+        // Apply rating filter (simplified for server-side)
+        if (filters?.ratings && filters.ratings.length > 0) {
+          const minRating = Math.min(...filters.ratings) - 0.5;
+          query = query.gte("average_rating", minRating);
+        }
+
+        result = await query.range(from, to);
       } else if (mode === "created" && userId) {
-        result = await supabase
+        // Build the created items query
+        let query = supabase
           .from("items_with_authors")
           .select("*")
           .eq("user_id", userId)
-          .order(sortColumn, { ascending })
-          .range(from, to);
+          .order(sortColumn, { ascending });
+
+        // Apply category filter
+        if (filters?.categories && filters.categories.length > 0) {
+          query = query.in("category_id", filters.categories);
+        }
+
+        // Apply rating filter
+        if (filters?.ratings && filters.ratings.length > 0) {
+          const minRating = Math.min(...filters.ratings) - 0.5;
+          query = query.gte("average_rating", minRating);
+        }
+
+        result = await query.range(from, to);
       } else {
-        result = await supabase
+        // Build the general items query
+        let query = supabase
           .from("items_with_authors")
           .select("*")
-          .order(sortColumn, { ascending })
-          .range(from, to);
+          .order(sortColumn, { ascending });
+
+        // Apply category filter
+        if (filters?.categories && filters.categories.length > 0) {
+          query = query.in("category_id", filters.categories);
+        }
+
+        // Apply rating filter
+        if (filters?.ratings && filters.ratings.length > 0) {
+          const minRating = Math.min(...filters.ratings) - 0.5;
+          query = query.gte("average_rating", minRating);
+        }
+
+        result = await query.range(from, to);
       }
 
       if (result.error) throw result.error;
 
-      const transformedItems = transformItems(result.data || []);
+      let transformedItems = transformItems(result.data || []);
+
+      // Apply client-side rating filter for precise matching (except favorites which are already filtered)
+      if (
+        mode !== "favorited" &&
+        filters?.ratings &&
+        filters.ratings.length > 0
+      ) {
+        transformedItems = transformedItems.filter((item) => {
+          const itemRating = item.average_rating || 0;
+          return filters.ratings!.some((rating) => {
+            const minRating = rating - 0.5;
+            const maxRating = rating + 0.49;
+            return itemRating >= minRating && itemRating <= maxRating;
+          });
+        });
+      }
 
       return {
         items: transformedItems,
@@ -166,25 +262,9 @@ export function useItems({
   };
 }
 
-// Updated convenience hooks with sorting support
-export const useGeneralItems = (sortBy?: SortOption, sortOrder?: SortOrder) =>
-  useItems({ mode: "general", sortBy, sortOrder });
-
-export const useUserItems = (sortBy?: SortOption, sortOrder?: SortOrder) =>
-  useItems({ mode: "created", sortBy, sortOrder });
-
-export const useFavoriteItems = (sortBy?: SortOption, sortOrder?: SortOrder) =>
-  useItems({ mode: "favorited", sortBy, sortOrder });
-
-export const useSearchItems = (
-  searchQuery: string,
-  sortBy?: SortOption,
-  sortOrder?: SortOrder
-) =>
-  useItems({
-    mode: "search",
-    searchQuery,
-    enabled: !!searchQuery.trim(),
-    sortBy,
-    sortOrder,
-  });
+// Keep the existing convenience hooks unchanged to maintain compatibility
+export const useGeneralItems = () => useItems({ mode: "general" });
+export const useUserItems = () => useItems({ mode: "created" });
+export const useFavoriteItems = () => useItems({ mode: "favorited" });
+export const useSearchItems = (searchQuery: string) =>
+  useItems({ mode: "search", searchQuery, enabled: !!searchQuery.trim() });

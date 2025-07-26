@@ -4,13 +4,32 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { useSearchItems } from "@/hooks/useItems";
+import { useItems } from "@/hooks/useItems";
 import { SearchBar } from "@/components/SearchBar";
 import { ItemList } from "@/components/ItemList";
+import { SortFilterModal } from "@/components/SortFilterModal";
+import { useFilterSort } from "@/hooks/useFilterSort";
 import { useDebouncedCallback } from "use-debounce";
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const {
+    filters,
+    sort,
+    hasActiveFilters,
+    toggleCategory,
+    toggleRating,
+    setSortBy,
+    resetAll,
+  } = useFilterSort();
+
+  // Convert filters to the format expected by useItems
+  const filterOptions = {
+    categories: filters.categories.length > 0 ? filters.categories : undefined,
+    ratings: filters.ratings.length > 0 ? filters.ratings : undefined,
+  };
 
   const {
     data: items,
@@ -18,11 +37,35 @@ export default function SearchScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useSearchItems(searchQuery);
+  } = useItems({
+    mode: searchQuery.trim() ? "search" : "general",
+    searchQuery: searchQuery.trim(),
+    enabled: true,
+    sortBy: sort.sortBy,
+    sortOrder: sort.sortOrder,
+    filters: filterOptions,
+  });
 
   const debouncedSearch = useDebouncedCallback((query: string) => {
     setSearchQuery(query);
   }, 300);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleApplyFilters = () => {
+    // Filters are already applied through the hook state
+    console.log("Filters applied:", { filters, sort });
+  };
+
+  const handleClearFilters = () => {
+    resetAll();
+  };
 
   return (
     <>
@@ -53,10 +96,12 @@ export default function SearchScreen() {
                   </Text>
                 </HStack>
 
-                {/* Search Bar Row */}
+                {/* Search Bar Row with Filter Button */}
                 <SearchBar
                   onSearch={debouncedSearch}
                   placeholder="Search recipes..."
+                  onFilterPress={handleOpenModal}
+                  hasActiveFilters={hasActiveFilters}
                 />
               </VStack>
             </Box>
@@ -78,6 +123,19 @@ export default function SearchScreen() {
           }
         />
       </Box>
+
+      {/* Sort & Filter Modal */}
+      <SortFilterModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        filters={filters}
+        sort={sort}
+        onToggleCategory={toggleCategory}
+        onToggleRating={toggleRating}
+        onUpdateSort={setSortBy}
+        onClear={handleClearFilters}
+        onApply={handleApplyFilters}
+      />
     </>
   );
 }
