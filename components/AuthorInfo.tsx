@@ -15,6 +15,7 @@ interface AuthorInfoProps {
   userId: string; // If author not provided, fetch using userId
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
   orientation?: "horizontal" | "vertical";
+  variant?: "default" | "profile"; // New variant prop
 }
 
 export const AuthorInfo: React.FC<AuthorInfoProps> = ({
@@ -22,6 +23,7 @@ export const AuthorInfo: React.FC<AuthorInfoProps> = ({
   userId,
   size = "md",
   orientation = "horizontal",
+  variant = "default",
 }) => {
   const { data: fetchedAuthor, isLoading } = useGetUserProfile(userId || "");
 
@@ -52,6 +54,30 @@ export const AuthorInfo: React.FC<AuthorInfoProps> = ({
     );
   }
 
+  // Profile variant - always vertical and centered
+  if (variant === "profile") {
+    return (
+      <VStack space="sm" className="items-center">
+        <Avatar size={size}>
+          <AvatarFallbackText>{displayAuthor.username}</AvatarFallbackText>
+          {displayAuthor.avatar_url && (
+            <AvatarImage
+              source={{ uri: displayAuthor.avatar_url }}
+              alt={`${displayAuthor.username}'s avatar`}
+            />
+          )}
+        </Avatar>
+        <Text
+          className="text-xl font-semibold text-foreground text-center"
+          numberOfLines={1}
+        >
+          {displayAuthor.username}
+        </Text>
+      </VStack>
+    );
+  }
+
+  // Default variant - respects orientation prop
   const Component = orientation === "vertical" ? VStack : HStack;
   const spacing = orientation === "vertical" ? "xs" : "sm";
   const alignment =
