@@ -215,6 +215,7 @@ export type Database = {
           title: string | null;
           user_id: string | null;
           username: string | null;
+          view_count: number | null;
         };
         Relationships: [
           {

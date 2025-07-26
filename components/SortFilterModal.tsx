@@ -20,13 +20,14 @@ import { SortOption } from "@/types/item";
 interface SortFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  filters: FilterState;
-  sort: SortState;
+  pendingFilters: FilterState;
+  pendingSort: SortState;
   onToggleCategory: (categoryId: number) => void;
   onToggleRating: (rating: number) => void;
   onUpdateSort: (sortBy: SortOption) => void;
   onClear: () => void;
   onApply: () => void;
+  onCancel: () => void;
 }
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5];
@@ -39,15 +40,21 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 export const SortFilterModal: React.FC<SortFilterModalProps> = ({
   isOpen,
   onClose,
-  filters,
-  sort,
+  pendingFilters,
+  pendingSort,
   onToggleCategory,
   onToggleRating,
   onUpdateSort,
   onClear,
   onApply,
+  onCancel,
 }) => {
   const { data: categories, isLoading: categoriesLoading } = useCategories();
+
+  const handleClose = () => {
+    onCancel(); // Reset pending changes
+    onClose();
+  };
 
   const handleApply = () => {
     onApply();
@@ -76,8 +83,40 @@ export const SortFilterModal: React.FC<SortFilterModalProps> = ({
     </Button>
   );
 
+  const SortButton: React.FC<{
+    isSelected: boolean;
+    onPress: () => void;
+    children: React.ReactNode;
+    sortOrder?: "asc" | "desc";
+  }> = ({ isSelected, onPress, children, sortOrder }) => (
+    <Button
+      variant={isSelected ? "solid" : "outline"}
+      size="sm"
+      onPress={onPress}
+      className={`rounded-full ${
+        isSelected ? "bg-primary" : "bg-background border-border"
+      }`}
+    >
+      <ButtonText
+        size="sm"
+        className={isSelected ? "text-primary-foreground" : "text-foreground"}
+      >
+        {children}
+        {isSelected && (
+          <Text
+            className={
+              isSelected ? "text-primary-foreground" : "text-foreground"
+            }
+          >
+            {sortOrder === "desc" ? " ↓" : " ↑"}
+          </Text>
+        )}
+      </ButtonText>
+    </Button>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
       <ModalBackdrop />
       <ModalContent className="bg-white">
         <ModalHeader className="border-b border-border">
@@ -98,16 +137,18 @@ export const SortFilterModal: React.FC<SortFilterModalProps> = ({
               </Text>
               <HStack space="sm" className="flex-wrap">
                 {SORT_OPTIONS.map((option) => (
-                  <FilterButton
+                  <SortButton
                     key={option.value}
-                    isSelected={sort.sortBy === option.value}
+                    isSelected={pendingSort.sortBy === option.value}
                     onPress={() => onUpdateSort(option.value)}
+                    sortOrder={
+                      pendingSort.sortBy === option.value
+                        ? pendingSort.sortOrder
+                        : undefined
+                    }
                   >
                     {option.label}
-                    {sort.sortBy === option.value &&
-                      option.value === "date" &&
-                      " ↓"}
-                  </FilterButton>
+                  </SortButton>
                 ))}
               </HStack>
             </VStack>
@@ -121,7 +162,7 @@ export const SortFilterModal: React.FC<SortFilterModalProps> = ({
                 {RATING_OPTIONS.map((rating) => (
                   <FilterButton
                     key={rating}
-                    isSelected={filters.ratings.includes(rating)}
+                    isSelected={pendingFilters.ratings.includes(rating)}
                     onPress={() => onToggleRating(rating)}
                   >
                     {rating} ⭐
@@ -146,7 +187,9 @@ export const SortFilterModal: React.FC<SortFilterModalProps> = ({
                     {categories?.slice(0, 3).map((category) => (
                       <FilterButton
                         key={category.id}
-                        isSelected={filters.categories.includes(category.id)}
+                        isSelected={pendingFilters.categories.includes(
+                          category.id
+                        )}
                         onPress={() => onToggleCategory(category.id)}
                       >
                         {category.category}
@@ -160,7 +203,9 @@ export const SortFilterModal: React.FC<SortFilterModalProps> = ({
                       {categories.slice(3, 6).map((category) => (
                         <FilterButton
                           key={category.id}
-                          isSelected={filters.categories.includes(category.id)}
+                          isSelected={pendingFilters.categories.includes(
+                            category.id
+                          )}
                           onPress={() => onToggleCategory(category.id)}
                         >
                           {category.category}
@@ -175,7 +220,9 @@ export const SortFilterModal: React.FC<SortFilterModalProps> = ({
                       {categories.slice(6).map((category) => (
                         <FilterButton
                           key={category.id}
-                          isSelected={filters.categories.includes(category.id)}
+                          isSelected={pendingFilters.categories.includes(
+                            category.id
+                          )}
                           onPress={() => onToggleCategory(category.id)}
                         >
                           {category.category}

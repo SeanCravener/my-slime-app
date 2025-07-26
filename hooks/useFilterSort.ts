@@ -27,19 +27,31 @@ const defaultSort: SortState = {
 };
 
 export function useFilterSort(initialState?: Partial<FilterSortState>) {
-  const [filters, setFilters] = useState<FilterState>({
+  // Applied state - this is what gets used by the items query
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     ...defaultFilters,
     ...initialState?.filters,
   });
 
-  const [sort, setSort] = useState<SortState>({
+  const [appliedSort, setAppliedSort] = useState<SortState>({
     ...defaultSort,
     ...initialState?.sort,
   });
 
-  // Filter actions
+  // Pending state - this is what gets modified in the modal
+  const [pendingFilters, setPendingFilters] = useState<FilterState>({
+    ...defaultFilters,
+    ...initialState?.filters,
+  });
+
+  const [pendingSort, setPendingSort] = useState<SortState>({
+    ...defaultSort,
+    ...initialState?.sort,
+  });
+
+  // Filter actions (modify pending state)
   const toggleCategory = useCallback((categoryId: number) => {
-    setFilters((prev) => ({
+    setPendingFilters((prev) => ({
       ...prev,
       categories: prev.categories.includes(categoryId)
         ? prev.categories.filter((id) => id !== categoryId)
@@ -48,7 +60,7 @@ export function useFilterSort(initialState?: Partial<FilterSortState>) {
   }, []);
 
   const toggleRating = useCallback((rating: number) => {
-    setFilters((prev) => ({
+    setPendingFilters((prev) => ({
       ...prev,
       ratings: prev.ratings.includes(rating)
         ? prev.ratings.filter((r) => r !== rating)
@@ -56,64 +68,87 @@ export function useFilterSort(initialState?: Partial<FilterSortState>) {
     }));
   }, []);
 
-  const clearFilters = useCallback(() => {
-    setFilters(defaultFilters);
-  }, []);
-
-  // Sort actions
-  const updateSort = useCallback((newSort: Partial<SortState>) => {
-    setSort((prev) => ({ ...prev, ...newSort }));
-  }, []);
-
+  // Sort actions (modify pending state with toggle logic)
   const setSortBy = useCallback((sortBy: SortOption) => {
-    setSort((prev) => ({ ...prev, sortBy }));
+    setPendingSort((prev) => {
+      if (prev.sortBy === sortBy) {
+        // If same sort option is selected, toggle the order
+        return {
+          ...prev,
+          sortOrder: prev.sortOrder === "desc" ? "asc" : "desc",
+        };
+      } else {
+        // If different sort option, set it with default desc order
+        return {
+          ...prev,
+          sortBy,
+          sortOrder: "desc",
+        };
+      }
+    });
   }, []);
 
-  const setSortOrder = useCallback((sortOrder: SortOrder) => {
-    setSort((prev) => ({ ...prev, sortOrder }));
+  // Apply pending changes to applied state
+  const applyChanges = useCallback(() => {
+    setAppliedFilters(pendingFilters);
+    setAppliedSort(pendingSort);
+    // Keep pending state in sync with applied state after applying
+    // This ensures next time modal opens, it shows current applied settings
+  }, [pendingFilters, pendingSort]);
+
+  // Reset pending to match applied (cancel changes)
+  const cancelChanges = useCallback(() => {
+    setPendingFilters(appliedFilters);
+    setPendingSort(appliedSort);
+  }, [appliedFilters, appliedSort]);
+
+  // Sync pending state with applied state (call when opening modal)
+  const syncPendingWithApplied = useCallback(() => {
+    setPendingFilters(appliedFilters);
+    setPendingSort(appliedSort);
+  }, [appliedFilters, appliedSort]);
+
+  // Clear all filters (both pending and applied)
+  const clearAll = useCallback(() => {
+    setPendingFilters(defaultFilters);
+    setPendingSort(defaultSort);
+    setAppliedFilters(defaultFilters);
+    setAppliedSort(defaultSort);
   }, []);
 
-  // Reset everything
-  const resetAll = useCallback(() => {
-    setFilters(defaultFilters);
-    setSort(defaultSort);
-  }, []);
-
-  // Check if any filters are active
+  // Check if any applied filters are active
   const hasActiveFilters = useMemo(() => {
-    return filters.categories.length > 0 || filters.ratings.length > 0;
-  }, [filters]);
-
-  // Check if sort is different from default
-  const hasCustomSort = useMemo(() => {
     return (
-      sort.sortBy !== defaultSort.sortBy ||
-      sort.sortOrder !== defaultSort.sortOrder
+      appliedFilters.categories.length > 0 || appliedFilters.ratings.length > 0
     );
-  }, [sort]);
+  }, [appliedFilters]);
+
+  // Check if there are pending changes
+  const hasPendingChanges = useMemo(() => {
+    return (
+      JSON.stringify(pendingFilters) !== JSON.stringify(appliedFilters) ||
+      JSON.stringify(pendingSort) !== JSON.stringify(appliedSort)
+    );
+  }, [pendingFilters, appliedFilters, pendingSort, appliedSort]);
 
   return {
-    // State
-    filters,
-    sort,
+    // Applied state (used by queries)
+    appliedFilters,
+    appliedSort,
     hasActiveFilters,
-    hasCustomSort,
 
-    // Filter actions
+    // Pending state (used by modal)
+    pendingFilters,
+    pendingSort,
+    hasPendingChanges,
+
+    // Actions
     toggleCategory,
     toggleRating,
-    clearFilters,
-
-    // Sort actions
-    updateSort,
     setSortBy,
-    setSortOrder,
-
-    // Reset
-    resetAll,
-
-    // Setters for bulk updates
-    setFilters,
-    setSort,
+    applyChanges,
+    cancelChanges,
+    syncPendingWithApplied,
+    clearAll,
   };
 }

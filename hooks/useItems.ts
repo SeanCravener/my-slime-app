@@ -15,7 +15,6 @@ export interface FilterOptions {
   ratings?: number[];
 }
 
-// Extend the existing UseItemsParams instead of creating a new interface
 interface ExtendedUseItemsParams extends UseItemsParams {
   filters?: FilterOptions;
 }
@@ -62,11 +61,10 @@ function applyClientSideFilters(items: any[], filters?: FilterOptions): any[] {
       }
     }
 
-    // Rating filter - show items that match any of the selected rating ranges
+    // Rating filter
     if (filters.ratings && filters.ratings.length > 0) {
       const itemRating = item.average_rating || 0;
       const matchesRating = filters.ratings.some((rating) => {
-        // Rating 5 = 4.5-5.0, Rating 4 = 3.5-4.49, etc.
         const minRating = rating - 0.5;
         const maxRating = rating + 0.49;
         return itemRating >= minRating && itemRating <= maxRating;
@@ -110,7 +108,6 @@ export function useItems({
       const ascending = sortOrder === "asc";
 
       if (mode === "favorited" && userId) {
-        // For favorites, get items and apply filters/sorting client-side
         result = await supabase
           .from("user_favorites")
           .select(
@@ -127,10 +124,8 @@ export function useItems({
         let items =
           result.data?.map((fav: any) => fav.items_with_authors) || [];
 
-        // Apply filters client-side
+        // Apply filters and sorting client-side for favorites
         items = applyClientSideFilters(items, filters);
-
-        // Apply client-side sorting
         items = items.sort((a: any, b: any) => {
           let aValue = a[sortColumn];
           let bValue = b[sortColumn];
@@ -157,19 +152,16 @@ export function useItems({
             items.length === ITEMS_PER_PAGE ? currentPage + 1 : undefined,
         };
       } else if (mode === "search" && searchQuery) {
-        // Build the search query
         let query = supabase
           .from("items_with_authors")
           .select("*")
           .or(`title.ilike.%${searchQuery}%`)
           .order(sortColumn, { ascending });
 
-        // Apply category filter
+        // Apply server-side filters
         if (filters?.categories && filters.categories.length > 0) {
           query = query.in("category_id", filters.categories);
         }
-
-        // Apply rating filter (simplified for server-side)
         if (filters?.ratings && filters.ratings.length > 0) {
           const minRating = Math.min(...filters.ratings) - 0.5;
           query = query.gte("average_rating", minRating);
@@ -177,19 +169,16 @@ export function useItems({
 
         result = await query.range(from, to);
       } else if (mode === "created" && userId) {
-        // Build the created items query
         let query = supabase
           .from("items_with_authors")
           .select("*")
           .eq("user_id", userId)
           .order(sortColumn, { ascending });
 
-        // Apply category filter
+        // Apply server-side filters
         if (filters?.categories && filters.categories.length > 0) {
           query = query.in("category_id", filters.categories);
         }
-
-        // Apply rating filter
         if (filters?.ratings && filters.ratings.length > 0) {
           const minRating = Math.min(...filters.ratings) - 0.5;
           query = query.gte("average_rating", minRating);
@@ -197,18 +186,15 @@ export function useItems({
 
         result = await query.range(from, to);
       } else {
-        // Build the general items query
         let query = supabase
           .from("items_with_authors")
           .select("*")
           .order(sortColumn, { ascending });
 
-        // Apply category filter
+        // Apply server-side filters
         if (filters?.categories && filters.categories.length > 0) {
           query = query.in("category_id", filters.categories);
         }
-
-        // Apply rating filter
         if (filters?.ratings && filters.ratings.length > 0) {
           const minRating = Math.min(...filters.ratings) - 0.5;
           query = query.gte("average_rating", minRating);
@@ -221,7 +207,7 @@ export function useItems({
 
       let transformedItems = transformItems(result.data || []);
 
-      // Apply client-side rating filter for precise matching (except favorites which are already filtered)
+      // Apply client-side rating filter for precise matching
       if (
         mode !== "favorited" &&
         filters?.ratings &&

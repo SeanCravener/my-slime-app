@@ -16,19 +16,28 @@ export default function SearchScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
-    filters,
-    sort,
+    appliedFilters,
+    appliedSort,
     hasActiveFilters,
+    pendingFilters,
+    pendingSort,
     toggleCategory,
     toggleRating,
     setSortBy,
-    resetAll,
+    applyChanges,
+    cancelChanges,
+    syncPendingWithApplied,
+    clearAll,
   } = useFilterSort();
 
   // Convert filters to the format expected by useItems
   const filterOptions = {
-    categories: filters.categories.length > 0 ? filters.categories : undefined,
-    ratings: filters.ratings.length > 0 ? filters.ratings : undefined,
+    categories:
+      appliedFilters.categories.length > 0
+        ? appliedFilters.categories
+        : undefined,
+    ratings:
+      appliedFilters.ratings.length > 0 ? appliedFilters.ratings : undefined,
   };
 
   const {
@@ -41,8 +50,8 @@ export default function SearchScreen() {
     mode: searchQuery.trim() ? "search" : "general",
     searchQuery: searchQuery.trim(),
     enabled: true,
-    sortBy: sort.sortBy,
-    sortOrder: sort.sortOrder,
+    sortBy: appliedSort.sortBy,
+    sortOrder: appliedSort.sortOrder,
     filters: filterOptions,
   });
 
@@ -51,20 +60,23 @@ export default function SearchScreen() {
   }, 300);
 
   const handleOpenModal = () => {
+    syncPendingWithApplied(); // Sync pending state with current applied state
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
+    cancelChanges(); // Reset pending changes when closing
     setIsModalOpen(false);
   };
 
   const handleApplyFilters = () => {
-    // Filters are already applied through the hook state
-    console.log("Filters applied:", { filters, sort });
+    applyChanges();
+    setIsModalOpen(false);
   };
 
   const handleClearFilters = () => {
-    resetAll();
+    clearAll();
+    setIsModalOpen(false);
   };
 
   return (
@@ -89,14 +101,12 @@ export default function SearchScreen() {
               }}
             >
               <VStack space="sm" className="pt-12 pb-2">
-                {/* Title Row */}
                 <HStack className="justify-between w-full items-center px-4 py-2">
                   <Text size="xl" className="font-bold text-foreground">
                     Search
                   </Text>
                 </HStack>
 
-                {/* Search Bar Row with Filter Button */}
                 <SearchBar
                   onSearch={debouncedSearch}
                   placeholder="Search recipes..."
@@ -124,17 +134,17 @@ export default function SearchScreen() {
         />
       </Box>
 
-      {/* Sort & Filter Modal */}
       <SortFilterModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        filters={filters}
-        sort={sort}
+        pendingFilters={pendingFilters}
+        pendingSort={pendingSort}
         onToggleCategory={toggleCategory}
         onToggleRating={toggleRating}
         onUpdateSort={setSortBy}
         onClear={handleClearFilters}
         onApply={handleApplyFilters}
+        onCancel={cancelChanges}
       />
     </>
   );
