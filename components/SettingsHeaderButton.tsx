@@ -1,9 +1,15 @@
-import React from "react";
+import React, { ComponentProps } from "react";
 import { useRouter } from "expo-router";
-import { Pressable } from "@/components/ui/pressable";
-import { Icon, SettingsIcon } from "@/components/ui/icon";
+import { Button, ButtonIcon } from "@/components/ui/button";
+import { SettingsIcon } from "@/components/ui/icon";
 
-export const SettingsHeaderButton: React.FC = () => {
+interface SettingsHeaderButtonProps extends ComponentProps<typeof Button> {}
+
+export const SettingsHeaderButton: React.FC<SettingsHeaderButtonProps> = ({
+  variant = "outline",
+  size = "xl",
+  disabled = false,
+}) => {
   const router = useRouter();
 
   const handlePress = () => {
@@ -11,16 +17,17 @@ export const SettingsHeaderButton: React.FC = () => {
   };
 
   return (
-    <Pressable
+    <Button
+      variant={variant}
+      size={size}
+      disabled={disabled}
       onPress={handlePress}
       hitSlop={8}
-      style={({ pressed }) => ({
-        opacity: pressed ? 0.7 : 1,
-      })}
       accessibilityRole="button"
       accessibilityLabel="Open Settings"
+      className="p-3"
     >
-      <Icon as={SettingsIcon} size="lg" className="text-foreground" />
-    </Pressable>
+      <ButtonIcon as={SettingsIcon} />
+    </Button>
   );
 };
