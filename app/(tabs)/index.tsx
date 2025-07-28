@@ -3,7 +3,9 @@ import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { ItemList } from "@/components/ItemList";
+import { Spinner } from "@/components/ui/spinner";
 import { useGeneralItems } from "@/hooks/useItems";
+import colors from "tailwindcss/colors";
 
 export default function HomeScreen() {
   const {
@@ -15,6 +17,18 @@ export default function HomeScreen() {
     error,
   } = useGeneralItems();
 
+  // Centered loading message. Loading data for ItemList.
+  if (isLoading) {
+    return (
+      <Box className="flex-1 bg-background-0 items-center justify-center">
+        <Spinner size="large" color={colors.fuchsia[600]} />
+        <Text size="lg">Loading...</Text>
+      </Box>
+    );
+  }
+
+  // Centered error message if trouble loading data.
+  // TODO: Possibly turn into seperate component dediced to ItemList?
   if (error) {
     return (
       <Box className="flex-1 bg-background justify-center items-center p-4">
@@ -31,9 +45,9 @@ export default function HomeScreen() {
   }
 
   return (
-    <Box className="flex-1 bg-background">
+    <>
       {/* Header */}
-      <Box className="px-4 py-6 border-b border-border bg-background">
+      <Box className="px-4 py-6 border-b border-border bg-background-0">
         <VStack space="xs">
           <Text className="text-3xl font-bold text-foreground">
             Latest Recipes
@@ -45,6 +59,7 @@ export default function HomeScreen() {
       </Box>
 
       {/* Items List */}
+
       <ItemList
         data={data}
         isLoading={isLoading}
@@ -53,6 +68,6 @@ export default function HomeScreen() {
         fetchNextPage={fetchNextPage}
         emptyText="No recipes found. Be the first to share one!"
       />
-    </Box>
+    </>
   );
 }

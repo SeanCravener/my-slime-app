@@ -1,19 +1,16 @@
-import React from "react";
+import React, { ComponentProps } from "react";
 import { Button, ButtonIcon } from "@/components/ui/button";
 import { FavouriteIcon } from "@/components/ui/icon";
 import { useFavorites } from "@/hooks/useFavorites"; // Updated import path
 
-interface FavoriteButtonProps {
+interface FavoriteButtonProps extends ComponentProps<typeof Button> {
   itemId: string;
-  variant?: "solid" | "outline" | "link" | undefined;
-  disabled?: boolean;
-  size?: "sm" | "md" | "lg" | "xs" | "xl";
 }
 
 export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   itemId,
-  variant = "outline",
-  disabled = false,
+  variant = "solid",
+  isDisabled = false,
   size = "md",
 }) => {
   const { favoritedItemIds, isLoading, toggleFavorite } = useFavorites();
@@ -21,7 +18,7 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   const isFavorited = favoritedItemIds.includes(itemId);
 
   const handlePress = async () => {
-    if (!isLoading && !disabled) {
+    if (!isLoading && !isDisabled) {
       try {
         await toggleFavorite(itemId, !isFavorited);
       } catch (error) {
@@ -33,19 +30,17 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 
   return (
     <Button
-      variant={variant}
+      variant="solid"
       size={size}
       onPress={handlePress}
-      isDisabled={isLoading || disabled}
-      className="w-10 h-10 rounded-lg border-muted-foreground p-1"
+      isDisabled={isLoading || isDisabled}
+      className="w-10 h-10 rounded-lg p-1"
     >
       <ButtonIcon
         as={FavouriteIcon}
         size={size}
         className={
-          isFavorited
-            ? "text-red-500 fill-red-500"
-            : "text-muted-foreground fill-transparent"
+          isFavorited ? "text-red-500 fill-red-500" : "text-black fill-white"
         }
       />
     </Button>
