@@ -26,7 +26,10 @@ export function useGetUserProfile(id: UserId) {
         ];
       }
       console.log("Fetched author data:", data);
-      return data;
+      return (data ?? []).map((item) => ({
+        ...item,
+        username: item.username ?? "Unknown User",
+      }));
     },
   });
 }
