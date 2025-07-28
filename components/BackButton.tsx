@@ -1,28 +1,58 @@
-import React from "react";
-import { Button, ButtonIcon } from "@/components/ui/button";
-import { ArrowLeftIcon } from "@/components/ui/icon";
-import { router } from "expo-router";
+import React, { ComponentProps } from "react";
+import { Button, ButtonIcon, ArrowLeftIcon } from "@/components/ui";
+import { router, type Href } from "expo-router";
 
-interface BackButtonProps {
-  size?: "xs" | "sm" | "md" | "lg";
-  variant?: "solid" | "outline" | "link";
-  disabled?: boolean;
+/**
+ * A reusable back navigation button component that handles navigation history intelligently.
+ *
+ * Features:
+ * - Automatically navigates back if history exists, otherwise goes to fallback route
+ * - Extends all Button component props for full customization
+ * - Includes accessibility and touch target optimizations
+ *
+ * @example
+ * ```tsx
+ * // Basic usage
+ * <BackButton />
+ *
+ * // With custom fallback
+ * <BackButton fallbackRoute="/home" />
+ *
+ * // With custom styling
+ * <BackButton variant="solid" size="lg" className="my-custom-class" />
+ * ```
+ */
+
+interface BackButtonProps
+  extends Omit<ComponentProps<typeof Button>, "onPress" | "onPressIn"> {
+  /** Route to navigate to when no navigation history exists. Defaults to "/(tabs)" */
+  fallbackRoute?: Href;
+  /** Increases touch target size for better usability. Defaults to 10px */
+  hitSlop?:
+    | number
+    | { top?: number; left?: number; right?: number; bottom?: number };
+  /** Accessibility label for screen readers. Defaults to "Go back" */
+  accessibilityLabel?: string;
 }
 
-// Was having issues with button not doing anything when testing in Android
-// Changing onPress to onPressIn fixees issue, but it is not ideal.
-// TODO: Make sure onPressIn won't cause issues or find fix for onPress not working.
 export const BackButton: React.FC<BackButtonProps> = ({
   size = "md",
   variant = "outline",
   disabled = false,
+  fallbackRoute = "/(tabs)",
+  className = "",
+  hitSlop = 10,
+  accessibilityLabel = "Go back",
+  ...restProps
 }) => {
+  /**
+   * Handles back navigation with fallback logic
+   */
   const handlePress = () => {
-    console.log(router.canGoBack());
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/(tabs)");
+      router.replace(fallbackRoute);
     }
   };
 
@@ -30,9 +60,14 @@ export const BackButton: React.FC<BackButtonProps> = ({
     <Button
       variant={variant}
       size={size}
-      onPressIn={handlePress}
-      isDisabled={disabled}
-      className="w-10 h-10 rounded-lg p-1 ml-2 mr-2"
+      onPress={handlePress}
+      disabled={disabled}
+      className={`w-10 h-10 rounded-lg p-1 ml-2 mr-2 ${className}`}
+      hitSlop={hitSlop}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityHint="Navigate to the previous screen"
+      {...restProps}
     >
       <ButtonIcon as={ArrowLeftIcon} size={size} />
     </Button>
